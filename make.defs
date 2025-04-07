@@ -1,0 +1,2 @@
+MLIR_AIE_PATH=/notebooks/mlir-aie
+include $(MLIR_AIE_PATH)/programming_examples/makefile-common
