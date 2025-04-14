@@ -1,4 +1,6 @@
-all: kernels
+all: nengoaie.xclbin
+
+nengoaie.xclbin: kernels
 	@mkdir -p build
 	@cp kernels/*.o build/
 	@cd build && aiecc.py --aie-generate-xclbin --no-compile-host --xclbin-name=$(@F) \
