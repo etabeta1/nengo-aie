@@ -18,16 +18,15 @@
 
 extern "C" {
 
-void elementwise_inc(bfloat16* in1, bfloat16* out1) {
+void elementwise_inc(int32_t* params, bfloat16* in1, bfloat16* out1) {
     bfloat16* __restrict pIn1 = in1;
     bfloat16* __restrict pOut1 = out1;
 
     constexpr int vec_factor = 32;
 
-    int N = aie::load_v<vec_factor>(pIn1)[0];
-    pIn1 += vec_factor;
+    int N = params[0];
 
-    for(int i = 0; i < N / vec_factor; i++) {
+    for(int i = 0; i < N / vec_factor; i++) chess_prepare_for_pipelining {
         aie::vector<bfloat16, vec_factor> vA = aie::load_v<vec_factor>(pIn1);
         pIn1 += vec_factor;
     
@@ -42,8 +41,9 @@ void elementwise_inc(bfloat16* in1, bfloat16* out1) {
         aie::accum<accfloat, vec_factor> acc2 = aie::add(acc1, vYin);
     
         aie::store_v(pOut1, acc2.template to_vector<bfloat16>(0));
-        pOut1 += vec_factor;
+
+        pOut1 += 4;
     }
 }
-
+ 
 } // extern "C"

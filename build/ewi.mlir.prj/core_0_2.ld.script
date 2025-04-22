@@ -2,7 +2,7 @@
 MEMORY
 {
    program (RX) : ORIGIN = 0, LENGTH = 0x0020000
-   data (!RX) : ORIGIN = 0x7D800, LENGTH = 0x2800
+   data (!RX) : ORIGIN = 0x7C240, LENGTH = 0x3DC0
 }
 ENTRY(__start)
 SECTIONS
@@ -47,17 +47,23 @@ _sp_start_value_DM_stack = .;
 . = 0x50000;
 . += 0x10000;
 . = 0x70400;
-input_fifo_cons_buff_0 = .;
-. += 0x1808;
-. = 0x74000;
-input_fifo_cons_buff_1 = .;
-. += 0x1808;
-. = 0x78000;
 output_fifo_buff_0 = .;
-. += 0x1800;
-. = 0x7C000;
+. += 0x240;
+. = 0x74000;
 output_fifo_buff_1 = .;
-. += 0x1800;
+. += 0x240;
+. = 0x70640;
+param_input_fifo_cons_buff_0 = .;
+. += 0x4;
+. = 0x74240;
+param_input_fifo_cons_buff_1 = .;
+. += 0x4;
+. = 0x78000;
+data_input_fifo_cons_buff_0 = .;
+. += 0x240;
+. = 0x7C000;
+data_input_fifo_cons_buff_1 = .;
+. += 0x240;
   .bss : { *(.bss*) } > data
 }
 INPUT(elementwise_incr.o)
