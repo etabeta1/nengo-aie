@@ -1,0 +1,23 @@
+.PHONY: all install test clean
+
+KERNEL_SOURCES = $(wildcard src/nengo_aie/aie_kernels/*/kernel.cc)
+KERNEL_OBJS = $(KERNEL_SOURCES:.cc=.o)
+
+all: kernels
+
+kernels: $(KERNEL_OBJS)
+
+%.o: %.cc: 
+	${PEANO_INSTALL_DIR}/bin/clang++ ${PEANOWRAP2_FLAGS} -c $< -o $@
+
+install: src
+	pip install -e .
+
+test: install
+	pytest tests/
+
+clean:
+	rm -rf src/nengo_aie.egg-info
+	rm -rf $(KERNEL_OBJECTS)
+
+include make.defs
