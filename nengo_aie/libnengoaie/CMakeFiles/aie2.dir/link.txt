@@ -1,0 +1,1 @@
+/usr/bin/g++-13 -Wl,--dependency-file=CMakeFiles/aie2.dir/link.d CMakeFiles/aie2.dir/libnengoaie.cpp.o CMakeFiles/aie2.dir/testbench.cpp.o -o aie2   -L/opt/xilinx/xrt/lib  -Wl,-rpath,/opt/xilinx/xrt/lib -lxrt_coreutil -lboost_program_options -lboost_filesystem
