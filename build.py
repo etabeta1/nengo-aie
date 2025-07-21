@@ -34,9 +34,9 @@ def _build():
                               "-I", "/home/mliraie/mlir-aie/ironenv/lib/python3.12/site-packages/mlir_aie/include",
                               os.path.join(d, "kernel.cc"), "-o", os.path.join(d, "kernel.o")])
     
-    print("[BUILD]:", "Building libnengoaie...")
-    subprocess.check_call(['cmake', '.', '-DMLIR_AIE_PATH=' + MLIR_AIE_PATH, '-DTARGET_NAME=aie2', '-Wno-dev'], cwd=LIBNENGOAIE_FOLDER)
-    subprocess.check_call(['cmake', '--build', '.', '--config', 'Release'], cwd=LIBNENGOAIE_FOLDER)
+    # print("[BUILD]:", "Building libnengoaie...")
+    # subprocess.check_call(['cmake', '.', '-DMLIR_AIE_PATH=' + MLIR_AIE_PATH, '-DTARGET_NAME=aie2', '-Wno-dev'], cwd=LIBNENGOAIE_FOLDER)
+    # subprocess.check_call(['cmake', '--build', '.', '--config', 'Release'], cwd=LIBNENGOAIE_FOLDER)
 
 def _clean():
     print("[CLEAN]:", "Kernels")

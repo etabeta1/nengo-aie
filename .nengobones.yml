@@ -1,0 +1,33 @@
+project_name: nengo-AIE
+pkg_name: nengo_aie
+repo_name: etabeta1/nengo-aie
+author: Andrea Oggioni
+author_email: 24810621+etabeta1@users.noreply.github.com
+description: AIE backend for Nengo
+copyright_start: 2025
+min_python: 3.12
+main_branch: main
+
+# TODO: add CI scripts to build package and install other libs
+# TODO: add test scripts
+
+license_rst:
+  type: mit
+
+contributing_rst: {}
+contributors_rst: {}
+
+manifest_in: {}
+setup_cfg: {}
+setup_py: {}
+docs_conf_py: {}
+pyproject_toml: {}
+py_typed: {}
+version_py:
+  type: semver
+  major: 0
+  minor: 1
+  patch: 0
+  release: False
+
+
