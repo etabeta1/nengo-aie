@@ -1,3 +1,0 @@
-/notebooks/nengo-aie/nengo_aie/libnengoaie/CMakeFiles/aie2.dir
-/notebooks/nengo-aie/nengo_aie/libnengoaie/CMakeFiles/edit_cache.dir
-/notebooks/nengo-aie/nengo_aie/libnengoaie/CMakeFiles/rebuild_cache.dir
