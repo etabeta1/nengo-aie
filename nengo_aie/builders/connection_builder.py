@@ -6,11 +6,12 @@ import nengo.transforms
 import numpy as np
 
 from nengo.builder.node import SimPyFunc as AIESimPyFunc
-from nengo.builder.operator import Copy as AIECopy, ElementwiseInc as AIEElementwiseInc, Reset as AIEReset
+from nengo.builder.operator import Copy as AIECopy, Reset as AIEReset
 from nengo.transforms import Dense as AIEDense
 
 from ..builder import AIEBuilder
 from ..components import AIEConnection
+from ..operators import AIEElementwiseInc
 
 
 @AIEBuilder.register(AIEConnection)

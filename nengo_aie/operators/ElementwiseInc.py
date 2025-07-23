@@ -1,4 +1,8 @@
-from nengo.builder.operator.ElementwiseInc
+import nengo.builder
+
+import logging
+logger = logging.getLogger(__name__)
+
 
 class AIEElementwiseInc(nengo.builder.operator.ElementwiseInc):
     def __init__(self, A, X, Y, tag=None):
@@ -6,19 +10,33 @@ class AIEElementwiseInc(nengo.builder.operator.ElementwiseInc):
 
     @property
     def A(self):
-        return self.reads[0]
+        return super().A
 
     @property
     def X(self):
-        return self.reads[1]
+        return super().X
 
     @property
     def Y(self):
-        return self.incs[0]
+        return super().Y
 
-    def make_step(self):
-        # TODO: check signal size, create callable to call kernel, return callable
-        raise NotImplementedError
+    @property
+    def _descstr(self):
+        return f"{self.A}, {self.X} -> {self.Y}"
 
-        
-    
+    def make_step(self, signals, dt, rng):
+        # We do signal size checks with the super() method without actually using the returning callable
+
+        try:
+            super().make_step(signals=signals, dt=dt, rng=rng)
+        except nengo.exceptions.BuildError as e:
+            logger.error(
+                "Error while making \'AIEElementWise\' step. Nested Exception is " + str(e))
+            raise nengo.exceptions.BuildError("AIEElementwiseInc: " + str(e))
+
+        def step():
+            pass
+        # TODO:
+        raise NotImplementedError()
+
+        return step
