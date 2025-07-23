@@ -1,20 +1,14 @@
 import nengo
 
 import nengo.builder
-import nengo.connection
 import nengo.ensemble
-import nengo.neurons
 import nengo.transforms
 import numpy as np
 
 from nengo.builder.node import SimPyFunc as AIESimPyFunc
 from nengo.builder.operator import Copy as AIECopy, ElementwiseInc as AIEElementwiseInc, Reset as AIEReset
 from nengo.connection import Connection as AIEConnection
-from nengo.ensemble import Ensemble as AIEEnsemble, Neurons as AIENeurons
-from nengo.node import Node as AIENode
-from nengo.rc import rc
-from nengo.solvers import NoSolver as AIENoSolver, Solver as AIESolver
-from nengo.transforms import Dense as AIEDense, NoTransform as AIENoTransform
+from nengo.transforms import Dense as AIEDense
 
 from ..builder import AIEBuilder
 
@@ -22,10 +16,10 @@ from ..builder import AIEBuilder
 
 
 @AIEBuilder.register(AIEConnection)
-def build_aie_connection(model: nengo.builder.Model, conn):
+def build_aie_connection(model: nengo.builder.Model, conn: AIEConnection):
     rng = np.random.RandomState(model.seeds[conn])
 
-    def get_prepost_signal(is_pre):
+    def get_prepost_signal(is_pre: bool) -> nengo.builder.Signal:
         target = conn.pre_obj if is_pre else conn.post_obj
         key = "out" if is_pre else "in"
 
@@ -67,8 +61,8 @@ def build_aie_connection(model: nengo.builder.Model, conn):
             model.add_op(AIESimPyFunc(in_signal, conn.function, None, sliced_in))
     elif isinstance(conn.pre_obj, nengo.Ensemble):
         eval_points, decoders, solver_info = model.build(
-            conn.solver, conn, rng)  # type: ignore
-        if isinstance(conn.post_obj, nengo.Ensemble) and conn.solver.weights:
+            conn.solver, conn, rng) or (None, None, None)
+        if isinstance(conn.post_obj, nengo.Ensemble) and conn.solver.weights:  # type: ignore
             model.sig[conn]["out"] = model.sig[conn.post_obj.neurons]["in"]
             encoders = model.params[conn.post_obj].scaled_encoders.T
             encoders = encoders[conn.post_slice]
@@ -78,12 +72,12 @@ def build_aie_connection(model: nengo.builder.Model, conn):
         in_signal = nengo.builder.connection.slice_signal(
             model, in_signal, conn.pre_slice)
 
-    if conn.solver.weights and not conn.solver.compositional:
+    if conn.solver.weights and not conn.solver.compositional:  # type: ignore
         weighted, weights = model.build(
-            AIEDense(decoders.shape, init=decoders), in_signal, rng=rng)  # type: ignore
+            AIEDense(decoders.shape, init=decoders), in_signal, rng=rng) or (None, None)  # type: ignore
     else:
         weighted, weights = model.build(
-            conn.transform, in_signal, decoders=decoders, encoders=encoders, rng=rng)  # type: ignore
+            conn.transform, in_signal, decoders=decoders, encoders=encoders, rng=rng) or (None, None)
 
     model.sig[conn]["weights"] = weights
 
@@ -122,14 +116,14 @@ def build_aie_connection(model: nengo.builder.Model, conn):
 
         for r in rule.values() if isinstance(rule, dict) else rule:
             model.build(r)
-            targets.append(r.modifies)
+            targets.append(r.modifies)  # type: ignore
 
         if "encoders" in targets:
             encoder_sig = model.sig[conn.post_obj]["encoders"]
             encoder_sig.readonly = False
 
-        if "decoders" in "targets" or "weights" in targets:
-            if weights.ndim < 2:
+        if "decoders" in targets or "weights" in targets:
+            if weights.ndim < 2:  # type: ignore
                 raise nengo.exceptions.BuildError(
                     "'transform' must be a 2-dimensional array for learning"
                 )
