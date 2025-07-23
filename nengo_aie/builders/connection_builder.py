@@ -84,6 +84,8 @@ def build_aie_connection(model: nengo.builder.Model, conn: AIEConnection):
     if conn.synapse is not None:
         weighted = model.build(conn.synapse, weighted, mode="update")
 
+    model.sig[conn]["weighted"] = weighted
+
     if isinstance(conn.post_obj, nengo.ensemble.Neurons):
         gains = nengo.builder.Signal(
             model.params[conn.post_obj.ensemble].gain[post_slice], name=f"{conn}.gains")
