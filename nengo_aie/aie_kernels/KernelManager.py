@@ -15,10 +15,10 @@ class KernelManager:
     @staticmethod
     def register_kernel_source(opname, *args):
         if opname in KernelManager.__kernel_sources.keys():
-            logger.debug(f"{opname} kernel already registered")
+            logger.debug(f"{opname.value} kernel already registered")
             return
 
-        logger.debug(f"Registering {opname} kernel")
+        logger.debug(f"Registering {opname.value} kernel")
         source_content = KernelManager.resources.joinpath(*args).read_bytes()
         destination = tempfile.NamedTemporaryFile(delete=False, suffix=".cc")
 
@@ -37,7 +37,7 @@ class KernelManager:
             raise ArrtibuteError("ERROR: env variable $PEANO_INSTALL_DIR not set")
         
         for opname, source_name in KernelManager.__kernel_sources.items():
-            logger.debug(f"Compiling {opname} kernel")
+            logger.debug(f"Compiling {opname.value} kernel")
 
             object_name = tempfile.NamedTemporaryFile(delete=False, suffix=".o")
             
@@ -55,6 +55,3 @@ class KernelManager:
     @staticmethod
     def get_kernel_object_for(opname):
         return __kernel_objects[opname]
-
-class MlirManager:
-    pass

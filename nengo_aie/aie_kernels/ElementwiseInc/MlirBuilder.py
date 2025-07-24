@@ -1,4 +1,4 @@
-from .. import MlirBuilderBase
+from .. import MlirBuilderBase, KernelManager, OpNames
 
 import numpy as np
 import argparse
@@ -10,7 +10,7 @@ from aie.iron.controlflow import range_
 
 class ElementwiseIncBuilder(MlirBuilderBase):
     def __init__(self):
-        super().__init__("ElementwiseInc.mlir")
+        super().__init__()
 
     def build(self, device, size):
         value_type = np.half
@@ -23,7 +23,7 @@ class ElementwiseIncBuilder(MlirBuilderBase):
     
         kernel_fn = Kernel(
             "elementwise_inc",
-            "kernel.o",
+            KernelManager.get_kernel_object_for(OpNames.ELEMENTWISE_INC)
             [input_type, output_type]
         )
     
@@ -52,6 +52,8 @@ class ElementwiseIncBuilder(MlirBuilderBase):
     
         resolved = program.resolve_program(SequentialPlacer())
 
-        with open(self.filename) as f:
+        with open(super().mlir_source) as f:
             print(resolved, file=f)
+
+        return super().compile()
     

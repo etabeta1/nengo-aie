@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class AIESimulator(nengo.Simulator):
-    def __init__(self, network, dt=0.001, seed=None, progress_bar=True, recompile_kernels=True):
+    def __init__(self, network, dt=0.001, seed=None, progress_bar=True):
         logger.info("Initializing simulator")
         super().__init__(
             network,

@@ -1,5 +1,7 @@
 import nengo.builder
 
+from .. import AIEManager
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -33,10 +35,8 @@ class AIEElementwiseInc(nengo.builder.operator.ElementwiseInc):
             logger.error(
                 "Error while making \'AIEElementWise\' step. Nested Exception is " + str(e))
             raise nengo.exceptions.BuildError("AIEElementwiseInc: " + str(e))
-
+        
         def step():
             pass
-        # TODO:
-        raise NotImplementedError()
 
         return step

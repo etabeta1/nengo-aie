@@ -1,7 +1,12 @@
+from enum import Enum
+
 from .MlirBuilder import MlirBuilder as MlirBuilderBase
 from .ElementwiseInc import ElementwiseIncBuilder
 
-from .Managers import KernelManager, MlirManager
+from .KernelManager import KernelManager
 
-KernelManager.register_kernel_source(ElementwiseInc.__name__, "ElementwiseInc", "kernel.cc")
+class OpNames(Enum):
+    ELEMENTWISE_INC = ElementwiseInc.__name__
+
+KernelManager.register_kernel_source(OpNames.ELEMENTWISE_INC, "ElementwiseInc", "kernel.cc")
 KernelManager.compile_all()
