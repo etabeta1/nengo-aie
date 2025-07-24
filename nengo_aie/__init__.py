@@ -7,4 +7,6 @@ from .components import AIEConnection
 
 from .builders import *
 
-from .AIEManager import AIEManager
+from .AIEManager import AIEManager, AIEContext
+
+import rc
