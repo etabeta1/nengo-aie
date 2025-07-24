@@ -9,4 +9,4 @@ from .builders import *
 
 from .AIEManager import AIEManager, AIEContext
 
-import rc
+from . import rc

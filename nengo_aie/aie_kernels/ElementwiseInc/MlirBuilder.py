@@ -1,4 +1,5 @@
-from .. import MlirBuilderBase, KernelManager, OpNames
+from .. import MlirBuilderBase, OpNames
+from ..KernelManager import KernelManager
 
 import numpy as np
 import argparse
@@ -24,7 +25,7 @@ class ElementwiseIncBuilder(MlirBuilderBase):
 
         kernel_fn = Kernel(
             "elementwise_inc",
-            KernelManager.get_kernel_object_for(OpNames.ELEMENTWISE_INC)
+            KernelManager.get_kernel_object_for(OpNames.ELEMENTWISE_INC),
             [input_type, output_type]
         )
 
@@ -53,7 +54,7 @@ class ElementwiseIncBuilder(MlirBuilderBase):
 
         resolved = program.resolve_program(SequentialPlacer())
 
-        with open(super().mlir_source) as f:
+        with open(super().mlir_source, "w") as f:
             print(resolved, file=f)
 
         return super().compile()

@@ -1,6 +1,10 @@
 from abc import ABC, abstractmethod
 import tempfile
 import aie.utils.compile as compile_utils  # type: ignore
+import subprocess
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 class MlirBuilder(ABC):
@@ -9,7 +13,7 @@ class MlirBuilder(ABC):
             delete=False, suffix=".mlir").name
         self.__xclbin_path = tempfile.NamedTemporaryFile(
             delete=False, suffix=".xclbin").name
-        self.__insts_path = tempfile.NamedTemporaryFile(delete=False).name
+        self.__insts_path = tempfile.NamedTemporaryFile(delete=False, suffix=".bin").name
 
     @abstractmethod
     def build(self, device, size) -> tuple[str, str]:
@@ -20,7 +24,16 @@ class MlirBuilder(ABC):
         return self.__mlir_source
 
     def compile(self) -> tuple[str, str]:
-        compile_utils.compile_mlir_module_to_binary(
-            self.__mlir_source, self.__insts_path, self.__xclbin_path)
+        # We cannot call aiecc.py directly using aie.utils.compile unless we want to make this not working on jupyter (asyncio conflicts)
+        output = subprocess.check_output(["aiecc.py",
+                                          "--aie-generate-xclbin", "--no-compile-host", f"--xclbin-name={self.__xclbin_path}",
+                                          "--no-xchesscc", "--no-xbridge",
+                                          "--aie-generate-npu-insts", f"--npu-insts-name={self.__insts_path}",
+                                          self.__mlir_source
+                                         ],
+                                         stderr=subprocess.STDOUT)
+
+        if len(output) > 0:
+            logger.debug(output)
 
         return (self.__insts_path, self.__xclbin_path)

@@ -1,9 +1,9 @@
 import pyxrt as xrt  # type: ignore
 import nengo.builder
 
-from .. import AIEManager, AIEContext
-from aie_kernels import ElementwiseIncBuilder
-from .. import rc
+from ..AIEManager import AIEManager, AIEContext
+from ..aie_kernels import ElementwiseIncBuilder
+from ..rc import DEFAULT_DEVICE
 
 import logging
 logger = logging.getLogger(__name__)
@@ -19,16 +19,16 @@ class AIEElementwiseInc(nengo.builder.operator.ElementwiseInc):
         if AIEElementwiseInc.context is None:
             builder = ElementwiseIncBuilder()
             (insts_path, xclbin_path) = builder.build(
-                rc.DEFAULT_DEVICE, AIEElementwiseInc.MAX_SIZE)
+                DEFAULT_DEVICE, AIEElementwiseInc.MAX_SIZE)
             (device, kernel) = AIEManager.init_aie(xclbin_path)
             (instr_v, instr_bo) = AIEManager.load_insts(insts_path, device, kernel)
 
             AIEElementwiseInc.context = AIEContext(device, kernel, instr_v, instr_bo)
 
             input_bo = AIEElementwiseInc.context.create_inout_bo(
-                "input", 3 * AIEElementwiseInc.MAX_SIZE)
+                "input", 3 * AIEElementwiseInc.MAX_SIZE * 2)
             output_bo = AIEElementwiseInc.context.create_inout_bo(
-                "output", AIEElementwiseInc.MAX_SIZE)
+                "output", AIEElementwiseInc.MAX_SIZE * 2)
 
     @property
     def A(self):
