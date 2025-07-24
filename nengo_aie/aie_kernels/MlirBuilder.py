@@ -31,6 +31,7 @@ class MlirBuilder(ABC):
                                           "--aie-generate-npu-insts", f"--npu-insts-name={self.__insts_path}",
                                           self.__mlir_source
                                          ],
+                                         cwd=tempfile.gettempdir(),
                                          stderr=subprocess.STDOUT)
 
         if len(output) > 0:
