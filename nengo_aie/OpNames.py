@@ -1,5 +1,6 @@
 from enum import Enum
-import ElementwiseInc
+
+from aie_kernels import ElementwiseInc
 
 
 class OpNames(Enum):

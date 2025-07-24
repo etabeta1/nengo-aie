@@ -1,5 +1,4 @@
-
-from OpNames import *
+from ..OpNames import *
 from MlirBuilder import MlirBuilder as MlirBuilderBase
 from ElementwiseInc import ElementwiseIncBuilder
 
