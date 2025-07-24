@@ -2,7 +2,7 @@ import pyxrt as xrt  # type: ignore
 import nengo.builder
 
 from .. import AIEManager, AIEContext
-from ..aie_kernels import ElementwiseIncBuilder
+from aie_kernels import ElementwiseIncBuilder
 from .. import rc
 
 import logging
