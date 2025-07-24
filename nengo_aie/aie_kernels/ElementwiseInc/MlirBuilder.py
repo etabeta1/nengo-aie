@@ -8,9 +8,9 @@ from aie.iron import Kernel, ObjectFifo, Program, Runtime, Worker
 from aie.iron.placers import SequentialPlacer
 from aie.iron.controlflow import range_
 
-class MlirBuilder(MlirBuilderBase.MlirBuilder):
+class ElementwiseIncBuilder(MlirBuilderBase):
     def __init__(self):
-        MlirBuilderBase.MlirBuilder.__init__(self, "ElementwiseInc.mlir")
+        super().__init__("ElementwiseInc.mlir")
 
     def build(self, device, size):
         value_type = np.half
