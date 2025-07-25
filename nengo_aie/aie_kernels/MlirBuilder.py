@@ -25,16 +25,20 @@ class MlirBuilder(ABC):
 
     def compile(self) -> tuple[str, str]:
         # We cannot call aiecc.py directly using aie.utils.compile unless we want to make this not working on jupyter (asyncio conflicts)
-        output = subprocess.check_output(["aiecc.py",
-                                          "--aie-generate-xclbin", "--no-compile-host", f"--xclbin-name={self.__xclbin_path}",
-                                          "--no-xchesscc", "--no-xbridge",
-                                          "--aie-generate-npu-insts", f"--npu-insts-name={self.__insts_path}",
-                                          self.__mlir_source
-                                         ],
-                                         cwd=tempfile.gettempdir(),
-                                         stderr=subprocess.STDOUT)
-
-        if len(output) > 0:
-            logger.debug(output)
-
+        try:
+            output = subprocess.check_output(["aiecc.py",
+                                              "--aie-generate-xclbin", "--no-compile-host", f"--xclbin-name={self.__xclbin_path}",
+                                              "--no-xchesscc", "--no-xbridge",
+                                              "--aie-generate-npu-insts", f"--npu-insts-name={self.__insts_path}",
+                                              self.__mlir_source
+                                             ],
+                                             cwd=tempfile.gettempdir(),
+                                             stderr=subprocess.STDOUT)
+    
+            if len(output) > 0:
+                logger.debug(output)
+        except subprocess.CalledProcessError as e:
+            logger.exception(e.output.decode())
+            raise e
+            
         return (self.__insts_path, self.__xclbin_path)
