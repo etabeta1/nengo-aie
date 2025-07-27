@@ -38,8 +38,8 @@ class AIEContext:
         self.__bos = {}
         self.__next_gid = 3
 
-    def create_inout_bo(self, name, size):
-        bo = xrt.bo(self.__device, size, xrt.bo.host_only,
+    def create_inout_bo(self, name, volume, itemsize):
+        bo = xrt.bo(self.__device, volume * itemsize, xrt.bo.host_only,
                     self.__kernel.group_id(self.__next_gid))
         self.__next_gid += 1
         self.__bos[name] = bo
