@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 
 class AIEManager:
-
     @staticmethod
     def init_aie(xclbin_path) -> tuple[xrt.device, xrt.kernel]:
         device = xrt.device(0)

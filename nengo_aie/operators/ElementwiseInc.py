@@ -14,7 +14,7 @@ class AIEElementwiseInc(nengo.builder.operator.ElementwiseInc):
         super().__init__(A, X, Y, tag=tag)
 
         self.size = AIEManager.next_multiple_of(16)(Y.size)
-        
+
         builder = ElementwiseIncBuilder()
         (insts_path, xclbin_path) = builder.build(DEFAULT_DEVICE, self.size)
         (device, kernel) = AIEManager.init_aie(xclbin_path)
@@ -22,8 +22,10 @@ class AIEElementwiseInc(nengo.builder.operator.ElementwiseInc):
 
         self.context = AIEContext(device, kernel, instr_v, instr_bo)
 
-        self.input_bo = self.context.create_inout_bo("input", 3 * self.size, ITEMTYPE().itemsize)
-        self.output_bo = self.context.create_inout_bo("output", self.size, ITEMTYPE().itemsize)
+        self.input_bo = self.context.create_inout_bo(
+            "input", 3 * self.size, ITEMTYPE().itemsize)
+        self.output_bo = self.context.create_inout_bo(
+            "output", self.size, ITEMTYPE().itemsize)
 
     @property
     def A(self):
@@ -50,16 +52,18 @@ class AIEElementwiseInc(nengo.builder.operator.ElementwiseInc):
             logger.error(
                 "Error while making \'AIEElementWise\' step. Nested Exception is " + str(e))
             raise nengo.exceptions.BuildError("AIEElementwiseInc: " + str(e))
-        
+
         def step():
             for i, buff in enumerate([self.A, self.X, self.Y]):
-                self.input_bo.write(signals[buff].astype(ITEMTYPE), self.size * i * ITEMTYPE().itemsize)
+                self.input_bo.write(signals[buff].astype(
+                    ITEMTYPE), self.size * i * ITEMTYPE().itemsize)
                 self.output_bo.sync(xrt.xclBOSyncDirection.XCL_BO_SYNC_BO_TO_DEVICE)
 
             self.context.kernel_call(self.input_bo, self.output_bo)  # type: ignore
 
             self.output_bo.sync(xrt.xclBOSyncDirection.XCL_BO_SYNC_BO_FROM_DEVICE)
 
-            signals[self.Y][...] = self.output_bo.read(self.size * ITEMTYPE().itemsize, 0).view(ITEMTYPE)[:signals[self.Y].size]
+            signals[self.Y][...] = self.output_bo.read(
+                self.size * ITEMTYPE().itemsize, 0).view(ITEMTYPE)[:signals[self.Y].size]
 
         return step

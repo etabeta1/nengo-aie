@@ -105,7 +105,7 @@ def build_aie_<component name>(model: nengo.builder.Model, <other parameters>):
 
 ### Adding new components
 
-Components are nothing more that a class used to store information about a part of the model to be simulated. Almost nothing but properties and the constructor are present in component definitions.
+Components are nothing more that a class used to store information about a part of the model to be simulated. Almost nothing but properties and the constructor are present in component definitions (except for neurons that also contains a `step` method).
 
 1. Create a new `nengo-aie/nengo_aie/components/<component name>.py` containing a class definition. The class should be part of the nengo `NengoObject` inheritance tree (if in doubt, inheriting from the default nengo implementation should be a safe choice);
 2.  If inheriting from the default nengo implementation, the `__init__` parameters should match the `super()`'s one and call it; other initializations may be done here;
