@@ -18,7 +18,6 @@ class AIELif(nengo.neurons.LIF):
 
         self.size = AIEManager.next_multiple_of(16)(size)
         self.dt = dt
-        self.min_voltage = min_voltage
 
         builder = LIFNeuronBuilder()
         (insts_path, xclbin_path) = builder.build(DEFAULT_DEVICE, self.size, tau_rc=self.tau_rc,
