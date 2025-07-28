@@ -68,11 +68,12 @@ class LIFNeuronBuilder(MlirBuilderBase):
                 output_of.release(1)
                 input_of.release(1)
 
-        rtps = GlobalBuffer(rtp_type, name=f"rtps", use_write_rtp=True)
-        rtpb = WorkerRuntimeBarrier()
+        rtps = [GlobalBuffer(
+            rtp_type, name=f"rtps{i}", use_write_rtp=True) for i in range(num_workers)]
+        rtpbs = [WorkerRuntimeBarrier() for _ in range(num_workers)]
 
         workers = [
-            Worker(core_fn, [rtpb, rtps, input_splits[i].cons(),
+            Worker(core_fn, [rtpbs[i], rtps[i], input_splits[i].cons(),
                    output_splits[i].prod()])
             for i in range(num_workers)
         ]
@@ -81,14 +82,16 @@ class LIFNeuronBuilder(MlirBuilderBase):
 
         with rt.sequence(entire_input_type, entire_output_type) as (i, o):
             def set_rtps(rtps):
-                rtps[0] = kwargs["tau_rc"]
-                rtps[1] = kwargs["tau_ref"]
-                rtps[2] = kwargs["min_voltage"]
-                rtps[3] = kwargs["dt"]
-                rtps[4] = kwargs["amplitude"]
+                for rtp in rtps:
+                    rtps[0] = kwargs["tau_rc"]
+                    rtps[1] = kwargs["tau_ref"]
+                    rtps[2] = kwargs["min_voltage"]
+                    rtps[3] = kwargs["dt"]
+                    rtps[4] = kwargs["amplitude"]
 
             rt.inline_ops(set_rtps, rtps)
-            rt.set_barrier(rtpb, 1)
+            for rtpb in rtpbs:
+                rt.set_barrier(rtpb, 1)
 
             rt.start(*workers)
 
