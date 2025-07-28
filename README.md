@@ -127,3 +127,11 @@ TODO
 
 ## Useful links
 
+| Name                         | Link                                                                                                |
+| ---------------------------- | --------------------------------------------------------------------------------------------------- |
+| Nengo documentation          | [nengo.ai](https://www.nengo.ai/nengo/)                                                             |
+| nengo/nengo repo             | [GitHub](https://github.com/nengo/nengo)                                                            |
+| xilinx/mlir-aie repo         | [GitHub](https://github.com/Xilinx/mlir-aie)                                                        |
+| AI Engine API User Guide     | [UG1529](https://download.amd.com/docnav/aiengine/xilinx2025_1/aiengine_api/aie_api/doc/index.html) |
+| AIE-ML Architecture Manual   | [AM020](https://docs.amd.com/r/en-US/am020-versal-aie-ml)                                           |
+| AIE Kernel Programming Guide | [UG1079](https://docs.amd.com/r/en-US/ug1079-ai-engine-kernel-coding)                               |
