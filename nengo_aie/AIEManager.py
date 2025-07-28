@@ -1,5 +1,6 @@
 import pyxrt as xrt  # type: ignore
 import aie.utils.xrt as xrt_utils  # type: ignore
+import math
 
 import logging
 logger = logging.getLogger(__name__)
@@ -27,6 +28,10 @@ class AIEManager:
         insts_bo.sync(xrt.xclBOSyncDirection.XCL_BO_SYNC_BO_TO_DEVICE)
 
         return (insts_v, insts_bo)
+
+    @staticmethod
+    def next_multiple_of(divider):
+        return lambda x: divider * math.ceil(x / divider)
 
 
 class AIEContext:

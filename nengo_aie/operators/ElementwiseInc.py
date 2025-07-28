@@ -10,25 +10,20 @@ logger = logging.getLogger(__name__)
 
 
 class AIEElementwiseInc(nengo.builder.operator.ElementwiseInc):
-    context = None
-    MAX_SIZE = 2048
-
     def __init__(self, A: nengo.builder.Signal, X: nengo.builder.Signal, Y: nengo.builder.Signal, tag=None):
         super().__init__(A, X, Y, tag=tag)
 
-        if AIEElementwiseInc.context is None:
-            builder = ElementwiseIncBuilder()
-            (insts_path, xclbin_path) = builder.build(
-                DEFAULT_DEVICE, AIEElementwiseInc.MAX_SIZE)
-            (device, kernel) = AIEManager.init_aie(xclbin_path)
-            (instr_v, instr_bo) = AIEManager.load_insts(insts_path, device, kernel)
+        self.size = AIEManager.next_multiple_of(16)(Y.size)
+        
+        builder = ElementwiseIncBuilder()
+        (insts_path, xclbin_path) = builder.build(DEFAULT_DEVICE, self.size)
+        (device, kernel) = AIEManager.init_aie(xclbin_path)
+        (instr_v, instr_bo) = AIEManager.load_insts(insts_path, device, kernel)
 
-            AIEElementwiseInc.context = AIEContext(device, kernel, instr_v, instr_bo)
+        self.context = AIEContext(device, kernel, instr_v, instr_bo)
 
-            input_bo = AIEElementwiseInc.context.create_inout_bo(
-                "input", 3 * AIEElementwiseInc.MAX_SIZE, ITEMTYPE().itemsize)
-            output_bo = AIEElementwiseInc.context.create_inout_bo(
-                "output", AIEElementwiseInc.MAX_SIZE, ITEMTYPE().itemsize)
+        self.input_bo = self.context.create_inout_bo("input", 3 * self.size, ITEMTYPE().itemsize)
+        self.output_bo = self.context.create_inout_bo("output", self.size, ITEMTYPE().itemsize)
 
     @property
     def A(self):
@@ -55,23 +50,16 @@ class AIEElementwiseInc(nengo.builder.operator.ElementwiseInc):
             logger.error(
                 "Error while making \'AIEElementWise\' step. Nested Exception is " + str(e))
             raise nengo.exceptions.BuildError("AIEElementwiseInc: " + str(e))
-
-        in_bo = AIEElementwiseInc.context.get_bo("input")  # type: ignore
-        out_bo = AIEElementwiseInc.context.get_bo("output")  # type: ignore
-
-        print(signals[self.A])
         
         def step():
             for i, buff in enumerate([self.A, self.X, self.Y]):
-                  # type: ignore
-                in_bo.write(signals[buff].astype(ITEMTYPE), AIEElementwiseInc.MAX_SIZE * i * ITEMTYPE().itemsize)
-                in_bo.sync(xrt.xclBOSyncDirection.XCL_BO_SYNC_BO_TO_DEVICE)
+                self.input_bo.write(signals[buff].astype(ITEMTYPE), self.size * i * ITEMTYPE().itemsize)
+                self.output_bo.sync(xrt.xclBOSyncDirection.XCL_BO_SYNC_BO_TO_DEVICE)
 
-            AIEElementwiseInc.context.kernel_call(in_bo, out_bo)  # type: ignore
+            self.context.kernel_call(self.input_bo, self.output_bo)  # type: ignore
 
-            out_bo.sync(xrt.xclBOSyncDirection.XCL_BO_SYNC_BO_FROM_DEVICE)
+            self.output_bo.sync(xrt.xclBOSyncDirection.XCL_BO_SYNC_BO_FROM_DEVICE)
 
-            signals[self.Y][...] = out_bo.read(AIEElementwiseInc.MAX_SIZE * ITEMTYPE().itemsize, 0).view(ITEMTYPE)[
-                :signals[self.Y].size]
+            signals[self.Y][...] = self.output_bo.read(self.size * ITEMTYPE().itemsize, 0).view(ITEMTYPE)[:signals[self.Y].size]
 
         return step
