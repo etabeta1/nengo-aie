@@ -74,20 +74,22 @@ class LIFNeuronBuilder(MlirBuilderBase):
 
         workers = [
             Worker(core_fn, [rtpbs[i], rtps[i], input_splits[i].cons(),
-                   output_splits[i].prod()])
+                   output_splits[i].prod(), kernel_fn])
             for i in range(num_workers)
         ]
 
         rt = Runtime()
 
         with rt.sequence(entire_input_type, entire_output_type) as (i, o):
-            def set_rtps(rtps):
+            def set_rtps(*rtps):
                 for rtp in rtps:
-                    rtps[0] = kwargs["tau_rc"]
-                    rtps[1] = kwargs["tau_ref"]
-                    rtps[2] = kwargs["min_voltage"]
-                    rtps[3] = kwargs["dt"]
-                    rtps[4] = kwargs["amplitude"]
+                    # rtp[0] = kwargs["tau_rc"]
+                    # rtp[1] = kwargs["tau_ref"]
+                    # rtp[2] = kwargs["min_voltage"]
+                    # rtp[3] = kwargs["dt"]
+                    # rtp[4] = kwargs["amplitude"]
+                    for i, el in enumerate(np.array([kwargs["tau_rc"], kwargs["tau_ref"], kwargs["min_voltage"], kwargs["dt"], kwargs["amplitude"]]).view(np.int32)):
+                        rtp[i] = el
 
             rt.inline_ops(set_rtps, rtps)
             for rtpb in rtpbs:
