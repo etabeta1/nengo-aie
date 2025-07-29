@@ -89,17 +89,24 @@ extern "C" {
         aie::vector<dtype, vec_factor> refractory_times = aie::load_v<vec_factor>(pIn);
         pIn += vec_factor;
 
+        // refractory_times -= dt
+        refractory_times = aie::sub(refractory_times, dt_in);
+
         // Clip between 0 and dt
         aie::vector<dtype, vec_factor> delta_t = aie::clamp(refractory_times, 0.0f, dt_in);
 
+        // v_exp = (J - voltages) * (e ^ {-delta_t / tau_rc} - 1)
         aie::vector<dtype, vec_factor> v_exp = aie::mul(
                 aie::sub(input_currents, voltages),
                 m::expm1(aie::negmul(delta_t, (1.0f / tau_rc_in))));
 
+        // voltage -= v_exp
         voltages = aie::sub(voltages, v_exp);
 
+        // Test spiked neurons
         aie::mask<vec_factor> spiked_mask = aie::gt(voltages, 1.0f);
 
+        // 0 if not spiked, amplitude/dt otherwise
         aie::vector<dtype, vec_factor> output = aie::select(0.0f, amplitude_in / dt_in, spiked_mask);
 
         aie::vector<dtype, vec_factor> tau_log = aie::mul(
@@ -109,8 +116,7 @@ extern "C" {
                     aie::neg(aie::sub(voltages, 1.0f)),
                     aie::sub(input_currents, 1.0f))));
 
-        aie::vector<dtype, vec_factor> t_spikes = aie::select(
-            0.0f, aie::add(dt_in,tau_log), spiked_mask);
+        aie::vector<dtype, vec_factor> t_spikes = aie::add(dt_in, tau_log)
         
         voltages = aie::select(aie::max(voltages, min_voltage_in), 0.0f, spiked_mask);
         refractory_times = aie::select(refractory_times, aie::add(tau_ref_in, t_spikes), spiked_mask);
