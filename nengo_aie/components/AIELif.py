@@ -20,7 +20,7 @@ class AIELif(nengo.neurons.LIF):
         self.dt = dt
 
         builder = LIFNeuronBuilder()
-        (insts_path, xclbin_path) = builder.build(DEFAULT_DEVICE, self.size, tau_rc=self.tau_rc,
+        (insts_path, xclbin_path) = builder.build(DEFAULT_DEVICE(1), self.size, tau_rc=self.tau_rc,
                                                   tau_ref=self.tau_ref, min_voltage=self.min_voltage, dt=dt, amplitude=self.amplitude)
         (device, kernel) = AIEManager.init_aie(xclbin_path)
         (instr_v, instr_bo) = AIEManager.load_insts(insts_path, device, kernel)

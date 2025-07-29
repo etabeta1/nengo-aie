@@ -16,7 +16,7 @@ class AIEElementwiseInc(nengo.builder.operator.ElementwiseInc):
         self.size = AIEManager.next_multiple_of(16)(Y.size)
 
         builder = ElementwiseIncBuilder()
-        (insts_path, xclbin_path) = builder.build(DEFAULT_DEVICE, self.size)
+        (insts_path, xclbin_path) = builder.build(DEFAULT_DEVICE(1), self.size)
         (device, kernel) = AIEManager.init_aie(xclbin_path)
         (instr_v, instr_bo) = AIEManager.load_insts(insts_path, device, kernel)
 
