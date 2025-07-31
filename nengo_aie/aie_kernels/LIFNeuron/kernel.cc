@@ -8,8 +8,10 @@ namespace m {
     #define LOG1P_PRECISION (16)
 
     // Computes exp(x) - 1 using taylor series expansion
-    __attribute__((inline)) aie::vector<dtype, vec_factor> expm1(aie::vector<dtype, vec_factor> xs) {
-        float inv_factorials[EXPM1_PRECISION] = {
+    __attribute__((inline)) aie::accum<accfloat, vec_factor> expm1(aie::vector<dtype, vec_factor> xs) {
+        event0();
+
+        dtype inv_factorials[EXPM1_PRECISION] = {
             1.0f,
             1.0f,
             0.5f,
@@ -23,17 +25,20 @@ namespace m {
             2.755731922398589e-07f
         };
 
-        auto xs_exp = aie::broadcast(1.0f);
+        aie::accum<accfloat, vec_factor> xs_exp(aie::broadcast(1.0f));
         aie::accum<accfloat, vec_factor> xs_sum(aie::broadcast(1.0f));
+        aie::accum<accfloat, vec_factor> prod;
 
-        for(int i = 1; i < EXPM1_PRECISION; i++) chess_prepare_for_pipelining chess_loop_range(EXPM1_PRECISION - 1, EXPM1_PRECISION - 1) {
-            xs_exp = aie::mul(xs_exp, xs);
-            xs_sum = aie::add(xs_sum, aie::mul(xs_exp, inv_factorials[i]));
+        for(int i = 1; i < EXPM1_PRECISION; i++) {
+            xs_exp = aie::mac(xs_exp, xs_exp.to_vector(), xs);
+            // prod = aie::mul(xs_exp.to_vector(), inv_factorials[i]);
+            // xs_sum = aie::add(xs_sum, prod);
+            xs_sum = aie::mac(xs_sum, xs_exp.to_vector(), inv_factorials[i]);
         }
 
-        xs_sum = aie::sub(xs_sum, 1.0f);
+        event1();
 
-        return xs_sum;
+        return aie::sub(xs_sum, 1.0f);
     }
 
     __attribute__((inline)) aie::vector<dtype, vec_factor> log1p(aie::vector<dtype, vec_factor> xs) {
@@ -47,7 +52,9 @@ namespace m {
                 f(x) = ln(1 + x) = -ln(1 / (1 + x)) = -ln((1 + x - x) / (1 + x)) = -ln(1 - x / (1 + x)) = -f(-x / (1 + x))
             so we substitute x with -x / (1 + x) when it's the case and then we negate the result.
         */
-        
+
+        event0();
+
         aie::mask<vec_factor> flip_mask = aie::gt(aie::abs(xs), 1.0f);
 
         aie::vector<dtype, vec_factor> negdiv = aie::neg(aie::div(xs, aie::add(xs, 1.0f)));
@@ -70,6 +77,8 @@ namespace m {
         }
 
         xs_sum = aie::select(xs_sum, aie::neg(xs_sum), flip_mask);
+
+        event1();
 
         return xs_sum;
     }
@@ -97,10 +106,12 @@ extern "C" {
         // Clip between 0 and dt
         aie::vector<dtype, vec_factor> delta_t = aie::clamp(refractory_times, 0.0f, dt_in);
 
+        aie::vector<dtype, vec_factor> diff_iv = aie::sub(input_currents, voltages);
+        aie::vector<dtype, vec_factor> nmul = aie::negmul(delta_t, (1.0f / tau_rc_in));
+        aie::vector<dtype, vec_factor> expm1_t =  m::expm1(nmul);
+
         // v_exp = (J - voltages) * (e ^ {-delta_t / tau_rc} - 1)
-        aie::vector<dtype, vec_factor> v_exp = aie::mul(
-                aie::sub(input_currents, voltages),
-                m::expm1(aie::negmul(delta_t, (1.0f / tau_rc_in))));
+        aie::vector<dtype, vec_factor> v_exp = aie::mul(diff_iv, expm1_t);
 
         // voltage -= v_exp
         voltages = aie::sub(voltages, v_exp);
@@ -119,8 +130,10 @@ extern "C" {
                     aie::sub(input_currents, 1.0f))));
 
         aie::vector<dtype, vec_factor> t_spikes = aie::add(dt_in, tau_log);
-        
-        voltages = aie::select(aie::max(voltages, min_voltage_in), 0.0f, spiked_mask);
+
+        // voltages = aie::max(voltages, min_voltage_in);
+        // voltages = aie::select(voltages, 0.0f, spiked_mask);
+
         refractory_times = aie::select(refractory_times, aie::add(tau_ref_in, t_spikes), spiked_mask);
         
         aie::store_v(pOut, output);

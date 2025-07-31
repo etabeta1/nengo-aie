@@ -53,6 +53,8 @@ class LIFNeuronBuilder(MlirBuilderBase):
         )
 
         def core_fn(rtps, barrier, input_of, output_of, kernel):
+            barrier.wait_for_value(1)
+            
             tau_rc = rtps[0]
             tau_ref = rtps[1]
             min_voltage = rtps[2]
@@ -62,9 +64,9 @@ class LIFNeuronBuilder(MlirBuilderBase):
             for _ in range_(0xFFFFFFFF):
                 i = input_of.acquire(1)
                 o = output_of.acquire(1)
-                kernel(kwargs["tau_rc"], kwargs["tau_ref"],
-                       kwargs["min_voltage"], kwargs["dt"], kwargs["amplitude"], i, o)
-                # kernel(tau_rc, tau_ref, min_voltage, dt, amplitude, i, o)
+                # kernel(kwargs["tau_rc"], kwargs["tau_ref"],
+                       # kwargs["min_voltage"], kwargs["dt"], kwargs["amplitude"], i, o)
+                kernel(tau_rc, tau_ref, min_voltage, dt, amplitude, i, o)
                 output_of.release(1)
                 input_of.release(1)
 
@@ -86,14 +88,16 @@ class LIFNeuronBuilder(MlirBuilderBase):
         with rt.sequence(entire_input_type, entire_output_type) as (i, o):
             def set_rtps(*rtpss):
                 for rtps in rtpss:
-                    rtps[0] = np.float32(kwargs["tau_rc"])
-                    rtps[1] = np.float32(kwargs["tau_ref"])
-                    rtps[2] = np.float32(kwargs["min_voltage"])
-                    rtps[3] = np.float32(kwargs["dt"])
-                    rtps[4] = np.float32(kwargs["amplitude"])
-                    print(rtps)
+                    rtps[0] = np.float32(kwargs["tau_rc"]).view(np.int32)
+                    rtps[1] = np.float32(kwargs["tau_ref"]).view(np.int32)
+                    rtps[2] = np.float32(kwargs["min_voltage"]).view(np.int32)
+                    rtps[3] = np.float32(kwargs["dt"]).view(np.int32)
+                    rtps[4] = np.float32(kwargs["amplitude"]).view(np.int32)
 
             rt.inline_ops(set_rtps, rtpss)
+
+            for rtpb in rtpbs:
+                rt.set_barrier(rtpb, 1)
 
             rt.start(*workers)
 
@@ -103,8 +107,7 @@ class LIFNeuronBuilder(MlirBuilderBase):
 
             rt.drain(
                 output_of.cons(), o,
-                TensorAccessPattern((3, size // vec_factor, vec_factor), offset=0, sizes=[
-                                    1, size // vec_factor, 3, vec_factor], strides=[0, vec_factor, size, 1]),
+                TensorAccessPattern((3, size // vec_factor, vec_factor), offset=0, sizes=[1, size // vec_factor, 3, vec_factor], strides=[0, vec_factor, size, 1]),
                 wait=True)
 
         program = Program(device, rt)
