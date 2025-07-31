@@ -82,6 +82,8 @@ extern "C" {
         dtype* __restrict pIn = in;
         dtype* __restrict pOut = out;
 
+        event0();
+
         aie::vector<dtype, vec_factor> input_currents = aie::load_v<vec_factor>(pIn);
         pIn += vec_factor;
         aie::vector<dtype, vec_factor> voltages = aie::load_v<vec_factor>(pIn);
@@ -116,7 +118,7 @@ extern "C" {
                     aie::neg(aie::sub(voltages, 1.0f)),
                     aie::sub(input_currents, 1.0f))));
 
-        aie::vector<dtype, vec_factor> t_spikes = aie::add(dt_in, tau_log)
+        aie::vector<dtype, vec_factor> t_spikes = aie::add(dt_in, tau_log);
         
         voltages = aie::select(aie::max(voltages, min_voltage_in), 0.0f, spiked_mask);
         refractory_times = aie::select(refractory_times, aie::add(tau_ref_in, t_spikes), spiked_mask);
@@ -127,5 +129,7 @@ extern "C" {
         pOut += vec_factor;
         aie::store_v(pOut, refractory_times);
         pOut += vec_factor;
+
+        event1();
     }
 }
