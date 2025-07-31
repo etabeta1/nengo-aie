@@ -64,8 +64,6 @@ class LIFNeuronBuilder(MlirBuilderBase):
             for _ in range_(0xFFFFFFFF):
                 i = input_of.acquire(1)
                 o = output_of.acquire(1)
-                # kernel(kwargs["tau_rc"], kwargs["tau_ref"],
-                       # kwargs["min_voltage"], kwargs["dt"], kwargs["amplitude"], i, o)
                 kernel(tau_rc, tau_ref, min_voltage, dt, amplitude, i, o)
                 output_of.release(1)
                 input_of.release(1)

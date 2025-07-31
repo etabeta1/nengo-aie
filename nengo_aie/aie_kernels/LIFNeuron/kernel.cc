@@ -31,8 +31,6 @@ namespace m {
 
         for(int i = 1; i < EXPM1_PRECISION; i++) {
             xs_exp = aie::mac(xs_exp, xs_exp.to_vector(), xs);
-            // prod = aie::mul(xs_exp.to_vector(), inv_factorials[i]);
-            // xs_sum = aie::add(xs_sum, prod);
             xs_sum = aie::mac(xs_sum, xs_exp.to_vector(), inv_factorials[i]);
         }
 
@@ -78,6 +76,24 @@ namespace m {
 }
 
 extern "C" {
+    void test_log1p(dtype* in, dtype* out) {
+        for(int i = 0; i < 3; i++) {
+            aie::vector<dtype, vec_factor> v = aie::load_v(in);
+            aie::store_v(out, m::log1p(v));
+            in += vec_factor;
+            out += vec_factor;
+        }
+    }
+
+    void test_expm1(dtype* in, dtype* out) {
+        for(int i = 0; i < 3; i++) {
+            aie::vector<dtype, vec_factor> v = aie::load_v(in);
+            aie::store_v(out, m::expm1(v).to_vector());
+            in += vec_factor;
+            out += vec_factor;
+        }
+    }
+
     void lif_kernel(dtype tau_rc_in, dtype tau_ref_in, dtype min_voltage_in, dtype dt_in, dtype amplitude_in,
                     dtype* in, dtype* out)
     {
@@ -108,9 +124,10 @@ extern "C" {
 
         // voltage -= v_exp
         voltages = aie::sub(voltages, v_exp);
-
+        
         // Test spiked neurons
-        aie::mask<vec_factor> spiked_mask = aie::gt(voltages, 1.0f);
+        // aie::mask<vec_factor> spiked_mask = aie::gt(voltages, 1.0f); // NaNs with gt on really rare occasions
+        aie::mask<vec_factor> spiked_mask = aie::ge(voltages, 1.0f);
 
         // 0 if not spiked, amplitude/dt otherwise
         aie::vector<dtype, vec_factor> output = aie::select(0.0f, amplitude_in / dt_in, spiked_mask);
@@ -129,7 +146,7 @@ extern "C" {
         voltages = aie::select(voltages, 0.0f, spiked_mask);
 
         refractory_times = aie::select(refractory_times, aie::add(tau_ref_in, t_spikes), spiked_mask);
-        
+
         aie::store_v(pOut, output);
         pOut += vec_factor;
         aie::store_v(pOut, voltages);
