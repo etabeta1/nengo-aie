@@ -46,6 +46,8 @@ class LIFNeuronBuilder(MlirBuilderBase):
             names=[f"output_of.join{i}" for i in range(num_workers)]
         )
 
+        rtp_type = np.ndarray[(5, ), np.dtype[value_type]]
+
         kernel_fn = Kernel(
             "lif_kernel",
             KernelManager.get_kernel_object_for(OpNames.LIF_NEURON),
@@ -54,7 +56,7 @@ class LIFNeuronBuilder(MlirBuilderBase):
 
         def core_fn(rtps, barrier, input_of, output_of, kernel):
             barrier.wait_for_value(1)
-            
+
             tau_rc = rtps[0]
             tau_ref = rtps[1]
             min_voltage = rtps[2]
@@ -67,8 +69,6 @@ class LIFNeuronBuilder(MlirBuilderBase):
                 kernel(tau_rc, tau_ref, min_voltage, dt, amplitude, i, o)
                 output_of.release(1)
                 input_of.release(1)
-
-        rtp_type = np.ndarray[(5, ), np.dtype[value_type]]
 
         rtpss = [GlobalBuffer(
             rtp_type, name=f"rtps{i}", use_write_rtp=True) for i in range(num_workers)]
@@ -105,7 +105,8 @@ class LIFNeuronBuilder(MlirBuilderBase):
 
             rt.drain(
                 output_of.cons(), o,
-                TensorAccessPattern((3, size // vec_factor, vec_factor), offset=0, sizes=[1, size // vec_factor, 3, vec_factor], strides=[0, vec_factor, size, 1]),
+                TensorAccessPattern((3, size // vec_factor, vec_factor), offset=0, sizes=[
+                                    1, size // vec_factor, 3, vec_factor], strides=[0, vec_factor, size, 1]),
                 wait=True)
 
         program = Program(device, rt)
