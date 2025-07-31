@@ -61,26 +61,19 @@ namespace m {
 
         xs = aie::select(xs, negdiv, flip_mask);
 
-        aie::vector<dtype, vec_factor> xs_exp(xs);
-        aie::vector<dtype, vec_factor> xs_sum = aie::broadcast(0.0f);
-        aie::vector<dtype, vec_factor> xs_temp = aie::broadcast(0.0f);
+        aie::accum<accfloat, vec_factor> xs_exp(xs);
+        aie::accum<accfloat, vec_factor> xs_sum(aie::broadcast(0.0f));
+        aie::accum<accfloat, vec_factor> xs_temp;
 
-        for(int i = 1; i <= LOG1P_PRECISION; i++) chess_prepare_for_pipelining chess_loop_range(LOG1P_PRECISION, LOG1P_PRECISION) {
-            xs_temp = aie::div(xs_exp, (float)i);
-            
-            if(i % 2 == 0) {
-                xs_temp = aie::mul(xs_temp, -1.0f);
-            }
-
+        for(int i = 1; i <= LOG1P_PRECISION; i++) chess_prepare_for_pipelining {
+            xs_temp = aie::div(xs_exp.to_vector(), (float)(i % 2 == 1 ? i : -i));
             xs_sum = aie::add(xs_sum, xs_temp);
-            xs_exp = aie::mul(xs_exp, xs);
+            xs_exp = aie::mul(xs_exp.to_vector(), xs);
         }
-
-        xs_sum = aie::select(xs_sum, aie::neg(xs_sum), flip_mask);
 
         event1();
 
-        return xs_sum;
+        return aie::select(xs_sum.to_vector(), aie::neg(xs_sum).to_vector(), flip_mask);
     }
 }
 
@@ -129,10 +122,11 @@ extern "C" {
                     aie::neg(aie::sub(voltages, 1.0f)),
                     aie::sub(input_currents, 1.0f))));
 
+
         aie::vector<dtype, vec_factor> t_spikes = aie::add(dt_in, tau_log);
 
-        // voltages = aie::max(voltages, min_voltage_in);
-        // voltages = aie::select(voltages, 0.0f, spiked_mask);
+        voltages = aie::max(voltages, min_voltage_in);
+        voltages = aie::select(voltages, 0.0f, spiked_mask);
 
         refractory_times = aie::select(refractory_times, aie::add(tau_ref_in, t_spikes), spiked_mask);
         
