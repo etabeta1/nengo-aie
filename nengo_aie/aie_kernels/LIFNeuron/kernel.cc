@@ -50,6 +50,25 @@ namespace m {
             so we substitute x with -x / (1 + x) when it's the case and then we negate the result.
         */
 
+        dtype signed_inv[LOG1P_PRECISION] = {
+            1.0f,
+            -0.5f,
+            0.3333333333333333f,
+            -0.25f,
+            0.2f,
+            -0.16666666666666666f,
+            0.14285714285714285f,
+            -0.125f,
+            0.1111111111111111f,
+            -0.1f,
+            0.09090909090909091f,
+            -0.08333333333333333f,
+            0.07692307692307693f,
+            -0.07142857142857142f,
+            0.06666666666666667f,
+            -0.0625f
+        };
+
         event0();
 
         aie::mask<vec_factor> flip_mask = aie::gt(aie::abs(xs), 1.0f);
@@ -61,9 +80,9 @@ namespace m {
         aie::accum<accfloat, vec_factor> xs_exp(aie::broadcast(1.0f));
         aie::accum<accfloat, vec_factor> xs_sum(aie::broadcast(0.0f));
 
-        for(int i = 1; i <= LOG1P_PRECISION; i++) chess_prepare_for_pipelining {
+        for(int i = 0; i < LOG1P_PRECISION; i++) chess_prepare_for_pipelining {
             xs_exp = aie::mul(xs_exp.to_vector(), xs);
-            xs_sum = aie::mac(xs_sum, xs_exp.to_vector(), 1.0f / (i % 2 == 1 ? i : -i));
+            xs_sum = aie::mac(xs_sum, xs_exp.to_vector(), signed_inv[i]);
         }
 
         event1();
@@ -98,6 +117,8 @@ extern "C" {
         dtype* __restrict pOut = out;
 
         event0();
+        dtype spike_height = amplitude_in / dt_in;
+
 
         aie::vector<dtype, vec_factor> input_currents = aie::load_v<vec_factor>(pIn);
         pIn += vec_factor;
@@ -118,7 +139,7 @@ extern "C" {
         
         aie::mask<vec_factor> spike_mask = aie::ge(voltages, 1.0f);
         
-        output = aie::select(0.0f, amplitude_in / dt_in, spike_mask);
+        output = aie::select(0.0f, spike_height, spike_mask);
 
         aie::vector<dtype, vec_factor> vm1 = aie::sub(voltages, 1.0f);
         aie::vector<dtype, vec_factor> im1 = aie::sub(input_currents, 1.0f);
