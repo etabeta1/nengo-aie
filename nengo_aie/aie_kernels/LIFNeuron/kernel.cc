@@ -63,7 +63,7 @@ namespace m {
 
         for(int i = 1; i <= LOG1P_PRECISION; i++) chess_prepare_for_pipelining {
             xs_exp = aie::mul(xs_exp.to_vector(), xs);
-            xs_sum = aie::mac(xs_sum, xs_exp.to_vector(), 1 / (i % 2 == 1 ? i, -i));
+            xs_sum = aie::mac(xs_sum, xs_exp.to_vector(), 1.0f / (i % 2 == 1 ? i : -i));
         }
 
         event1();
