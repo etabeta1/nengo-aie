@@ -58,14 +58,12 @@ namespace m {
 
         xs = aie::select(xs, negdiv, flip_mask);
 
-        aie::accum<accfloat, vec_factor> xs_exp(xs);
+        aie::accum<accfloat, vec_factor> xs_exp(aie::broadcast(1.0f));
         aie::accum<accfloat, vec_factor> xs_sum(aie::broadcast(0.0f));
-        aie::accum<accfloat, vec_factor> xs_temp;
 
         for(int i = 1; i <= LOG1P_PRECISION; i++) chess_prepare_for_pipelining {
-            xs_temp = aie::div(xs_exp.to_vector(), (float)(i % 2 == 1 ? i : -i));
-            xs_sum = aie::add(xs_sum, xs_temp);
             xs_exp = aie::mul(xs_exp.to_vector(), xs);
+            xs_sum = aie::mac(xs_sum, xs_exp.to_vector(), 1 / (i % 2 == 1 ? i, -i));
         }
 
         event1();
