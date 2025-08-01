@@ -47,8 +47,8 @@ class AIELif(nengo.neurons.LIF):
         self.output_bo.sync(xrt.xclBOSyncDirection.XCL_BO_SYNC_BO_FROM_DEVICE)
 
         output[...] = self.output_bo.read(output.size * ITEMTYPE().itemsize, 0).view(ITEMTYPE)[:output.size]
-        voltage[...] = self.output_bo.read(voltage.size * ITEMTYPE().itemsize, self.size * ITEMTYPE().itemsize)[:voltage.size]
-        refractory_time[...] = self.output_bo.read(refractory_time.size * ITEMTYPE().itemsize, 2 * self.size * ITEMTYPE().itemsize)[:refractory_time.size]
+        voltage[...] = self.output_bo.read(voltage.size * ITEMTYPE().itemsize, self.size * ITEMTYPE().itemsize).view(ITEMTYPE)[:voltage.size]
+        refractory_time[...] = self.output_bo.read(refractory_time.size * ITEMTYPE().itemsize, 2 * self.size * ITEMTYPE().itemsize).view(ITEMTYPE)[:refractory_time.size]
 
         # output_v = self.output_bo.read(
         #     3 * self.size * ITEMTYPE().itemsize, 0).view(ITEMTYPE)        

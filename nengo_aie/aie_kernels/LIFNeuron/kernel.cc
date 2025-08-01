@@ -111,18 +111,18 @@ extern "C" {
         refractory_times = aie::sub(refractory_times, dt_in);
         
         aie::vector<dtype, vec_factor> delta_t = aie::clamp(aie::sub(dt_in, refractory_times), 0.0f, dt_in);
-        aie::accum<accfloat, vec_factor> delta_iv = aie::sub(input_currents, voltages);
+        aie::vector<dtype, vec_factor> delta_iv = aie::sub(input_currents, voltages);
         aie::vector<dtype, vec_factor> exponential = m::expm1(aie::div(aie::neg(delta_t), tau_rc_in).to_vector());
         
         voltages = aie::sub(voltages, aie::mul(delta_iv, exponential).to_vector());
         
-        aie::mask<vec_factor> spike_mask = aie.gt(voltages, 1.0f);
+        aie::mask<vec_factor> spike_mask = aie::ge(voltages, 1.0f);
         
         output = aie::select(0.0f, amplitude_in / dt_in, spike_mask);
 
         aie::vector<dtype, vec_factor> vm1 = aie::sub(voltages, 1.0f);
         aie::vector<dtype, vec_factor> im1 = aie::sub(input_currents, 1.0f);
-        aie::vector<dtype, vec_factor> t_spike = aie::add(dt_in, aie::mul(tau_rc_in, m::log1p(aie::neg(aie::div(vm1, im1)))));
+        aie::vector<dtype, vec_factor> t_spike = aie::add(aie::mul(tau_rc_in, m::log1p(aie::neg(aie::div(vm1, im1)))), dt_in);
 
         voltages = aie::max(voltages, min_voltage_in);
         voltages = aie::select(voltages, 0.0f, spike_mask);
