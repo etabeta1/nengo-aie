@@ -26,12 +26,11 @@ namespace m {
         };
 
         aie::accum<accfloat, vec_factor> xs_exp(aie::broadcast(1.0f));
-        aie::accum<accfloat, vec_factor> xs_sum(aie::broadcast(1.0f));
-        aie::accum<accfloat, vec_factor> prod;
+        aie::accum<accfloat, vec_factor> xs_sum(aie::broadcast(0.0f));
 
-        for(int i = 1; i < EXPM1_PRECISION; i++) {
-            xs_exp = aie::mac(xs_exp, xs_exp.to_vector(), xs);
+        for(int i = 0; i < EXPM1_PRECISION; i++) {
             xs_sum = aie::mac(xs_sum, xs_exp.to_vector(), inv_factorials[i]);
+            xs_exp = aie::mul(xs_exp.to_vector(), xs);
         }
 
         event1();
