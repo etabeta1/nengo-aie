@@ -106,43 +106,28 @@ extern "C" {
         aie::vector<dtype, vec_factor> refractory_times = aie::load_v<vec_factor>(pIn);
         pIn += vec_factor;
 
-        // refractory_times -= dt
+        aie::vector<dtype, vec_factor> output;
+
         refractory_times = aie::sub(refractory_times, dt_in);
-
-        // Clip between 0 and dt
-        aie::vector<dtype, vec_factor> delta_t = aie::clamp(refractory_times, 0.0f, dt_in);
-
-        aie::vector<dtype, vec_factor> diff_iv = aie::sub(input_currents, voltages);
-        aie::vector<dtype, vec_factor> nmul = aie::negmul(delta_t, (1.0f / tau_rc_in));
-        aie::vector<dtype, vec_factor> expm1_t =  m::expm1(nmul);
-
-        // v_exp = (J - voltages) * (e ^ {-delta_t / tau_rc} - 1)
-        aie::vector<dtype, vec_factor> v_exp = aie::mul(diff_iv, expm1_t);
-
-        // voltage -= v_exp
-        voltages = aie::sub(voltages, v_exp);
         
-        // Test spiked neurons
-        // aie::mask<vec_factor> spiked_mask = aie::gt(voltages, 1.0f); // NaNs with gt on really rare occasions
-        aie::mask<vec_factor> spiked_mask = aie::ge(voltages, 1.0f);
+        aie::vector<dtype, vec_factor> delta_t = aie::clamp(aie::sub(dt_in, refractory_times), 0.0f, dt_in);
+        aie::accum<accfloat, vec_factor> delta_iv = aie::sub(input_currents, voltages);
+        aie::vector<dtype, vec_factor> exponential = m::expm1(aie::div(aie::neg(delta_t), tau_rc_in).to_vector());
+        
+        voltages = aie::sub(voltages, aie::mul(delta_iv, exponential).to_vector());
+        
+        aie::mask<vec_factor> spike_mask = aie.gt(voltages, 1.0f);
+        
+        output = aie::select(0.0f, amplitude_in / dt_in, spike_mask);
 
-        // 0 if not spiked, amplitude/dt otherwise
-        aie::vector<dtype, vec_factor> output = aie::select(0.0f, amplitude_in / dt_in, spiked_mask);
-
-        aie::vector<dtype, vec_factor> tau_log = aie::mul(
-            tau_rc_in,
-            m::log1p(
-                aie::div(
-                    aie::neg(aie::sub(voltages, 1.0f)),
-                    aie::sub(input_currents, 1.0f))));
-
-
-        aie::vector<dtype, vec_factor> t_spikes = aie::add(dt_in, tau_log);
+        aie::vector<dtype, vec_factor> vm1 = aie::sub(voltages, 1.0f);
+        aie::vector<dtype, vec_factor> im1 = aie::sub(input_currents, 1.0f);
+        aie::vector<dtype, vec_factor> t_spike = aie::add(dt_in, aie::mul(tau_rc_in, m::log1p(aie::neg(aie::div(vm1, im1)))));
 
         voltages = aie::max(voltages, min_voltage_in);
-        voltages = aie::select(voltages, 0.0f, spiked_mask);
+        voltages = aie::select(voltages, 0.0f, spike_mask);
 
-        refractory_times = aie::select(refractory_times, aie::add(tau_ref_in, t_spikes), spiked_mask);
+        refractory_times = aie::select(refractory_times, aie::add(tau_ref_in, t_spike), spike_mask);
 
         aie::store_v(pOut, output);
         pOut += vec_factor;
