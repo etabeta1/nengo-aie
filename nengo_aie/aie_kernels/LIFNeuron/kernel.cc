@@ -38,7 +38,8 @@ namespace m {
         return aie::sub(xs_sum, 1.0f);
     }
 
-    __attribute__((inline)) aie::vector<dtype, vec_factor> log1p(aie::vector<dtype, vec_factor> xs) {
+    __attribute__((inline)) aie::vector<dtype, vec_factor> log1p(aie::vector<dtype, vec_factor> xs)
+    {
         /*
             We know that
                 f(x) = ln(1 + x) = \sum_{i=1}^\infty \frac{x^i}{i} \cdot (-1)^{i+1}
@@ -66,8 +67,7 @@ namespace m {
             0.07692307692307693f,
             -0.07142857142857142f,
             0.06666666666666667f,
-            -0.0625f
-        };
+            -0.0625f};
 
         event0();
 
@@ -80,10 +80,12 @@ namespace m {
         aie::accum<accfloat, vec_factor> xs_exp(aie::broadcast(1.0f));
         aie::accum<accfloat, vec_factor> xs_sum(aie::broadcast(0.0f));
 
-        for(int i = 0; i < LOG1P_PRECISION; i++) chess_prepare_for_pipelining {
-            xs_exp = aie::mul(xs_exp.to_vector(), xs);
-            xs_sum = aie::mac(xs_sum, xs_exp.to_vector(), signed_inv[i]);
-        }
+        for (int i = 0; i < LOG1P_PRECISION; i++)
+            chess_prepare_for_pipelining
+            {
+                xs_exp = aie::mul(xs_exp.to_vector(), xs);
+                xs_sum = aie::mac(xs_sum, xs_exp.to_vector(), signed_inv[i]);
+            }
 
         event1();
 
