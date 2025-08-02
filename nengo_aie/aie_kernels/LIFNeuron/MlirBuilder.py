@@ -76,8 +76,7 @@ class LIFNeuronBuilder(MlirBuilderBase):
         rtpbs = [WorkerRuntimeBarrier() for _ in range(num_workers)]
 
         workers = [
-            Worker(core_fn, [rtpss[i], rtpbs[i], input_splits[i].cons(),
-                   output_splits[i].prod(), kernel_fn])
+            Worker(core_fn, [rtpss[i], rtpbs[i], input_splits[i].cons(), output_splits[i].prod(), kernel_fn])
             for i in range(num_workers)
         ]
 
@@ -105,8 +104,7 @@ class LIFNeuronBuilder(MlirBuilderBase):
 
             rt.drain(
                 output_of.cons(), o,
-                TensorAccessPattern((3, size // vec_factor, vec_factor), offset=0, sizes=[
-                                    1, size // vec_factor, 3, vec_factor], strides=[0, vec_factor, size, 1]),
+                TensorAccessPattern((3, size // vec_factor, vec_factor), offset=0, sizes=[1, size // vec_factor, 3, vec_factor], strides=[0, vec_factor, size, 1]),
                 wait=True)
 
         program = Program(device, rt)
