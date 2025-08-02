@@ -40,7 +40,8 @@ class AIELif(nengo.neurons.LIF):
         for i, buff in enumerate([J, voltage, refractory_time]):
             self.input_bo.write(buff.astype(ITEMTYPE), self.size *
                                 i * ITEMTYPE().itemsize)
-            self.input_bo.sync(xrt.xclBOSyncDirection.XCL_BO_SYNC_BO_TO_DEVICE)
+        
+        self.input_bo.sync(xrt.xclBOSyncDirection.XCL_BO_SYNC_BO_TO_DEVICE)
 
         self.context.kernel_call(self.input_bo, self.output_bo)  # type: ignore
 
