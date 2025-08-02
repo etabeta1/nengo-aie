@@ -139,13 +139,13 @@ extern "C" {
         
         voltages = aie::sub(voltages, aie::mul(delta_iv, exponential).to_vector());
         
-        aie::mask<vec_factor> spike_mask = aie::ge(voltages, 1.0f);
+        aie::mask<vec_factor> spike_mask = aie::gt(voltages, 1.0f);
         
         output = aie::select(0.0f, spike_height, spike_mask);
 
         aie::vector<dtype, vec_factor> vm1 = aie::sub(voltages, 1.0f);
         aie::vector<dtype, vec_factor> im1 = aie::sub(input_currents, 1.0f);
-        aie::vector<dtype, vec_factor> t_spike = aie::add(aie::mul(tau_rc_in, m::log1p(aie::neg(aie::div(vm1, im1)))), dt_in);
+        aie::vector<dtype, vec_factor> t_spike = aie::select(0.0f, aie::add(aie::mul(tau_rc_in, m::log1p(aie::neg(aie::div(vm1, im1)))), dt_in).to_vector(), spike_mask);
 
         voltages = aie::max(voltages, min_voltage_in);
         voltages = aie::select(voltages, 0.0f, spike_mask);

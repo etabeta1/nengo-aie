@@ -50,8 +50,14 @@ class AIEContext:
 
         return bo
 
+    def get_device(self):
+        return self.__device
+
     def get_bo(self, name):
         return self.__bos[name]
+
+    def get_kernel(self):
+        return self.__kernel
 
     def kernel_call(self, *args):
         h = self.__kernel(3, self.__instr_bo, len(self.__instr_v), *args)

@@ -36,6 +36,10 @@ class AIELif(nengo.neurons.LIF):
         # The one we use is the parameter.
         assert dt == self.dt
 
+        current_copy = np.copy(J)
+        voltage_copy = np.copy(voltage)
+        reft_copy = np.copy(refractory_time)
+
         self.input_bo.write(np.zeros((3 * self.size, )).astype(ITEMTYPE), 0)
         
         for i, buff in enumerate([J, voltage, refractory_time]):
@@ -46,11 +50,18 @@ class AIELif(nengo.neurons.LIF):
         self.context.kernel_call(self.input_bo, self.output_bo)  # type: ignore
         
         self.output_bo.sync(xrt.xclBOSyncDirection.XCL_BO_SYNC_BO_FROM_DEVICE)
-        
-        output[...] = self.output_bo.read(output.size * ITEMTYPE().itemsize, 0).view(ITEMTYPE)[:output.size]
-        voltage[...] = self.output_bo.read(voltage.size * ITEMTYPE().itemsize, self.size * ITEMTYPE().itemsize).view(ITEMTYPE)[:voltage.size]
-        refractory_time[...] = self.output_bo.read(refractory_time.size * ITEMTYPE().itemsize, 2 * self.size * ITEMTYPE().itemsize).view(ITEMTYPE)[:refractory_time.size]
 
+        try:
+            output[...] = self.output_bo.read(self.size * ITEMTYPE().itemsize, 0).view(ITEMTYPE)[:output.size]
+            voltage[...] = self.output_bo.read(self.size * ITEMTYPE().itemsize, self.size * ITEMTYPE().itemsize).view(ITEMTYPE)[:voltage.size]
+            refractory_time[...] = self.output_bo.read(self.size * ITEMTYPE().itemsize, 2 * self.size * ITEMTYPE().itemsize).view(ITEMTYPE)[:refractory_time.size]
+        except:
+            np.savetxt("currents.txt", current_copy.astype(np.f))
+            np.savetxt("voltages.txt", voltage_copy.astype(np.float32))
+            np.savetxt("reft.txt", reft_copy.astype(np.float32))
+            print("AAA")
+            raise Exception()
+            
         # output_v = self.output_bo.read(
         #     3 * self.size * ITEMTYPE().itemsize, 0).view(ITEMTYPE)        
 
