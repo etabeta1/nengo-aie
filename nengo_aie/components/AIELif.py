@@ -47,17 +47,17 @@ class AIELif(nengo.neurons.LIF):
         
         self.output_bo.sync(xrt.xclBOSyncDirection.XCL_BO_SYNC_BO_FROM_DEVICE)
         
-        output[...] = self.output_bo.read(output.size * ITEMTYPE().itemsize, 0).view(ITEMTYPE)[:output.size]
-        voltage[...] = self.output_bo.read(voltage.size * ITEMTYPE().itemsize, self.size * ITEMTYPE().itemsize).view(ITEMTYPE)[:voltage.size]
-        refractory_time[...] = self.output_bo.read(refractory_time.size * ITEMTYPE().itemsize, 2 * self.size * ITEMTYPE().itemsize).view(ITEMTYPE)[:refractory_time.size]
+        # output[...] = self.output_bo.read(output.size * ITEMTYPE().itemsize, 0).view(ITEMTYPE)[:output.size]
+        # voltage[...] = self.output_bo.read(voltage.size * ITEMTYPE().itemsize, self.size * ITEMTYPE().itemsize).view(ITEMTYPE)[:voltage.size]
+        # refractory_time[...] = self.output_bo.read(refractory_time.size * ITEMTYPE().itemsize, 2 * self.size * ITEMTYPE().itemsize).view(ITEMTYPE)[:refractory_time.size]
 
-        # output_v = self.output_bo.read(
-        #     3 * self.size * ITEMTYPE().itemsize, 0).view(ITEMTYPE)        
+        output_v = self.output_bo.read(
+            3 * self.size * ITEMTYPE().itemsize, 0).view(ITEMTYPE)        
 
-        # try:
-        #     output[...] = output_v[:output.size]
-        #     voltage[...] = output_v[self.size:self.size + voltage.size]
-        #     refractory_time[...] = output_v[2*self.size:2*self.size + refractory_time.size]
-        # except:
-        #     print(output_v)
-        #     raise Exception()
+        try:
+            output[...] = output_v[:output.size]
+            voltage[...] = output_v[self.size : self.size + voltage.size]
+            refractory_time[...] = output_v[2*self.size : 2*self.size + refractory_time.size]
+        except:
+            np.savetxt("fpe.txt", output_v)
+            raise
