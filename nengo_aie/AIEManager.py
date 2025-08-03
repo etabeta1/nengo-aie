@@ -61,4 +61,6 @@ class AIEContext:
 
     def kernel_call(self, *args):
         h = self.__kernel(3, self.__instr_bo, len(self.__instr_v), *args)
-        h.wait()
+        r = h.wait()
+        if r != xrt.ert_cmd_state.ERT_CMD_STATE_COMPLETED:
+            raise Exception(f"Kernel returned {r}")
