@@ -5,6 +5,8 @@ import numpy as np
 import argparse
 import sys
 
+import ml_dtypes
+
 from aie.iron import Kernel, ObjectFifo, Program, Runtime, Worker, GlobalBuffer, WorkerRuntimeBarrier  # type: ignore
 from aie.iron.placers import SequentialPlacer  # type: ignore
 from aie.iron.controlflow import range_  # type: ignore
@@ -18,8 +20,8 @@ class LIFNeuronBuilder(MlirBuilderBase):
     def build(self, device, size, **kwargs) -> tuple[str, str]:
         num_workers = 4
         depth = 2
-        value_type = np.float32
-        vec_factor = 16
+        value_type = ml_dtypes.bfloat16
+        vec_factor = 32
     
         entire_input_type = np.ndarray[(3 * size, ), np.dtype[value_type]]
         entire_output_type = np.ndarray[(3 * size, ), np.dtype[value_type]]
@@ -86,11 +88,11 @@ class LIFNeuronBuilder(MlirBuilderBase):
         with rt.sequence(entire_input_type, entire_output_type) as (i, o):   
             def set_rtps(*rtpss):
                 for rtps in rtpss:
-                    rtps[0] = np.float32(kwargs["tau_rc"]).view(np.int32)
-                    rtps[1] = np.float32(kwargs["tau_ref"]).view(np.int32)
-                    rtps[2] = np.float32(kwargs["min_voltage"]).view(np.int32)
-                    rtps[3] = np.float32(kwargs["dt"]).view(np.int32)
-                    rtps[4] = np.float32(kwargs["amplitude"]).view(np.int32)
+                    rtps[0] = ml_dtypes.bfloat16(kwargs["tau_rc"])
+                    rtps[1] = ml_dtypes.bfloat16(kwargs["tau_ref"])
+                    rtps[2] = ml_dtypes.bfloat16(kwargs["min_voltage"])
+                    rtps[3] = ml_dtypes.bfloat16(kwargs["dt"])
+                    rtps[4] = ml_dtypes.bfloat16(kwargs["amplitude"])
     
             rt.inline_ops(set_rtps, rtpss)
     

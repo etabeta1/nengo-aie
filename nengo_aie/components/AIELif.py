@@ -3,7 +3,7 @@ import nengo.neurons
 
 from ..AIEManager import AIEManager, AIEContext
 from ..aie_kernels import LIFNeuronBuilder
-from ..rc import DEFAULT_DEVICE, ITEMTYPE
+from ..rc import DEFAULT_DEVICE, ITEMTYPE, ITEMSIZE
 import numpy as np
 
 
@@ -16,7 +16,7 @@ class AIELif(nengo.neurons.LIF):
         # b) we program the NPU during the first step
         # both options are viable and have their problems. The first option has been chosen at this moment.
 
-        self.size = AIEManager.next_multiple_of(16)(size)
+        self.size = AIEManager.next_multiple_of(32)(size)
         self.dt = dt
 
         builder = LIFNeuronBuilder()
@@ -27,9 +27,9 @@ class AIELif(nengo.neurons.LIF):
         self.context = AIEContext(device, kernel, instr_v, instr_bo)
 
         self.input_bo = self.context.create_inout_bo(
-            "input", 3 * self.size, ITEMTYPE().itemsize)
+            "input", 3 * self.size, ITEMSIZE)
         self.output_bo = self.context.create_inout_bo(
-            "output", 3 * self.size, ITEMTYPE().itemsize)
+            "output", 3 * self.size, ITEMSIZE)
 
     def step(self, dt, J, output, voltage, refractory_time):
         # As per comment in the constructor, we now have two places from which to read the "dt" value.
@@ -40,10 +40,10 @@ class AIELif(nengo.neurons.LIF):
         voltage_copy = np.copy(voltage)
         reft_copy = np.copy(refractory_time)
 
-        self.input_bo.write(np.zeros((3 * self.size, )).astype(ITEMTYPE), 0)
+        self.input_bo.write(np.zeros((3 * self.size, )).astype(ITEMTYPE).view(np.uint8), 0)
         
         for i, buff in enumerate([J, voltage, refractory_time]):
-            self.input_bo.write(buff.astype(ITEMTYPE), self.size * i * ITEMTYPE().itemsize)
+            self.input_bo.write(buff.astype(ITEMTYPE).view(np.uint8), self.size * i * ITEMSIZE)
         
         self.input_bo.sync(xrt.xclBOSyncDirection.XCL_BO_SYNC_BO_TO_DEVICE)
         
@@ -51,6 +51,8 @@ class AIELif(nengo.neurons.LIF):
         
         self.output_bo.sync(xrt.xclBOSyncDirection.XCL_BO_SYNC_BO_FROM_DEVICE)
 
-        output[...] = self.output_bo.read(self.size * ITEMTYPE().itemsize, 0).view(ITEMTYPE)[:output.size]
-        voltage[...] = self.output_bo.read(self.size * ITEMTYPE().itemsize, self.size * ITEMTYPE().itemsize).view(ITEMTYPE)[:voltage.size]
-        refractory_time[...] = self.output_bo.read(self.size * ITEMTYPE().itemsize, 2 * self.size * ITEMTYPE().itemsize).view(ITEMTYPE)[:refractory_time.size]
+        print(self.output_bo.read(16, 0).view(np.int8))
+
+        output[...] = self.output_bo.read(self.size * ITEMSIZE, 0).view(ITEMTYPE)[:output.size]
+        voltage[...] = self.output_bo.read(self.size * ITEMSIZE, self.size * ITEMSIZE).view(ITEMTYPE)[:voltage.size]
+        refractory_time[...] = self.output_bo.read(self.size * ITEMSIZE, 2 * self.size * ITEMSIZE).view(ITEMTYPE)[:refractory_time.size]
