@@ -20,8 +20,11 @@ class LIFNeuronBuilder(MlirBuilderBase):
     def build(self, device, size, **kwargs) -> tuple[str, str]:
         num_workers = 4
         depth = 2
+        rtp_value_type = np.float32
         value_type = ml_dtypes.bfloat16
         vec_factor = 32
+    
+        rtp_type = np.ndarray[(5, ), np.dtype[rtp_value_type]]
     
         entire_input_type = np.ndarray[(3 * size, ), np.dtype[value_type]]
         entire_output_type = np.ndarray[(3 * size, ), np.dtype[value_type]]
@@ -47,14 +50,11 @@ class LIFNeuronBuilder(MlirBuilderBase):
             obj_types=[output_type] * num_workers,
             names=[f"output_of.join{i}" for i in range(num_workers)]
         )
-    
-        rtp_type = np.ndarray[(5, ), np.dtype[value_type]]
         
         kernel_fn = Kernel(
             "lif_kernel",
-            # "test_expm1",
             KernelManager.get_kernel_object_for(OpNames.LIF_NEURON),
-            [value_type] * 5 + [input_type, output_type]
+            [rtp_value_type] * 5 + [input_type, output_type]
         )
     
         def core_fn(rtps, barrier, input_of, output_of, kernel):
@@ -88,12 +88,12 @@ class LIFNeuronBuilder(MlirBuilderBase):
         with rt.sequence(entire_input_type, entire_output_type) as (i, o):   
             def set_rtps(*rtpss):
                 for rtps in rtpss:
-                    rtps[0] = ml_dtypes.bfloat16(kwargs["tau_rc"])
-                    rtps[1] = ml_dtypes.bfloat16(kwargs["tau_ref"])
-                    rtps[2] = ml_dtypes.bfloat16(kwargs["min_voltage"])
-                    rtps[3] = ml_dtypes.bfloat16(kwargs["dt"])
-                    rtps[4] = ml_dtypes.bfloat16(kwargs["amplitude"])
-    
+                    rtps[0] = np.float32(kwargs["tau_rc"]).view(np.int32)
+                    rtps[1] = np.float32(kwargs["tau_ref"]).view(np.int32)
+                    rtps[2] = np.float32(kwargs["min_voltage"]).view(np.int32)
+                    rtps[3] = np.float32(kwargs["dt"]).view(np.int32)
+                    rtps[4] = np.float32(kwargs["amplitude"]).view(np.int32)
+
             rt.inline_ops(set_rtps, rtpss)
     
             for rtpb in rtpbs:
