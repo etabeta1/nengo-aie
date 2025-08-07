@@ -9,6 +9,11 @@ logger = logging.getLogger(__name__)
 
 
 class AIESimulator(nengo.Simulator):
+    """Clone of the default nengo simulator that forces some parameters.
+
+    Refer to nengo documentation for information about methods and parameters.
+    """
+
     def __init__(self, network, dt=0.001, seed=None, progress_bar=True):
         logger.info("Initializing simulator")
         super().__init__(

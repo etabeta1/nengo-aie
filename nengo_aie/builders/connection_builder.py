@@ -15,6 +15,15 @@ from ..operators import AIEElementwiseInc
 
 @AIEBuilder.register(AIEConnection)
 def build_aie_connection(model: nengo.builder.Model, conn: AIEConnection):
+    """Builds a nengo connection between two nengo objects.
+
+    Parameters
+    ----------
+    model : nengo.builder.Model
+        The model into which add the connection.
+    conn : AIEConnection:
+        The connection to build.
+    """
     rng = np.random.RandomState(model.seeds[conn])
 
     def get_prepost_signal(is_pre: bool) -> nengo.builder.Signal:
@@ -91,7 +100,7 @@ def build_aie_connection(model: nengo.builder.Model, conn: AIEConnection):
         if nengo.utils.numpy.is_integer(post_slice) or isinstance(post_slice, slice):
             sliced_out = model.sig[conn]["out"][post_slice]
         else:
-            # TODO: create a custom operator that encompasses the following two and the elementwise inc in a single npu kernel
+            # TODO: create a custom operator that encapsulates the following two and the elementwise inc in a single npu kernel
             # Useless as of now because in the square example this branch is never called
             sliced_out = nengo.builder.Signal(
                 shape=gains.shape, name=f"{conn}.sliced_out")
@@ -99,7 +108,7 @@ def build_aie_connection(model: nengo.builder.Model, conn: AIEConnection):
             model.add_op(
                 AIECopy(sliced_out, model.sig[conn]["out"], dst_slice=post_slice, inc=True))
 
-        model.add_op(AIEElementwiseInc(gains, weighted, sliced_out,
+        model.add_op(AIEElementwiseInc(gains, weighted, sliced_out,  # type: ignore
                      tag=f"{conn}.gains_elementwiseinc"))
     else:
         model.add_op(

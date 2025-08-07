@@ -10,12 +10,25 @@ logger = logging.getLogger(__name__)
 
 
 class AIEElementwiseInc(nengo.builder.operator.ElementwiseInc):
+    """Wraps the nengo ElementwiseInc operator. Refer to the nengo documentation for properties, methods and parameters.
+
+    Attributes
+    ----------
+    size : int
+        The size of the input, rounded to the next greater multiple of 16.
+    context : AIEContext
+        Contains all the information needed to call the kernel on the NPU.
+    inout_bo, output_bo : xrt.bo
+        Used to send/receive data to/from the NPU.
+    """
+
     def __init__(self, A: nengo.builder.Signal, X: nengo.builder.Signal, Y: nengo.builder.Signal, tag=None):
         super().__init__(A, X, Y, tag=tag)
 
         self.size = AIEManager.next_multiple_of(16)(Y.size)
 
         builder = ElementwiseIncBuilder()
+        # TODO: use official wrapper (e.g. AIEApplication et similia)
         (insts_path, xclbin_path) = builder.build(DEFAULT_DEVICE(1), self.size)
         (device, kernel) = AIEManager.init_aie(xclbin_path)
         (instr_v, instr_bo) = AIEManager.load_insts(insts_path, device, kernel)
