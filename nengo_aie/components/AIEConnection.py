@@ -2,6 +2,9 @@ import nengo
 
 
 class AIEConnection(nengo.Connection):
+    """Wraps a nengo connection. Refer to nengo documentation for properties, methods and parameters.
+    """
+
     def __init__(self,
                  #  pre: nengo.Ensemble | nengo.ensemble.Neurons | nengo.Node,
                  #  post: nengo.Ensemble | nengo.ensemble.Neurons | nengo.Node | nengo.connection.LearningRule,

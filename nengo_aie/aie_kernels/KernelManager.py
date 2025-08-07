@@ -8,6 +8,15 @@ logger = logging.getLogger(__name__)
 
 
 class KernelManager:
+    """Manages the compilation and the tracking of all the sources and compilation artifacts related to each kernel.
+
+    Attributes
+    ----------
+    __kernel_sources : dict[OpNames, str]
+        Tracks the position of the .cc source for each kernel.
+    __kernel_objects : dict[OpNames, str]
+        Tracks the position of the object file for each kernel.
+    """
     __kernel_sources = {}
     __kernel_objects = {}
 
@@ -15,6 +24,17 @@ class KernelManager:
 
     @staticmethod
     def register_kernel_source(opname, *args):
+        """Registers a new source file for a given :OpNames: entry.
+
+        Returns early without mutating the state of the class if a kernel has already been registered.
+
+        Parameters
+        ----------
+        opname : OpNames
+            The :OpNames: entry associated to the kernel whose sources are to be registered.
+        *args : str[]
+            Path to the .cc source, one folder at a time (e.g. `register_kernel_source(..., "path", "to", "source.cc")`).
+        """
         if opname in KernelManager.__kernel_sources.keys():
             logger.debug(f"{opname.value} kernel already registered")
             return
@@ -30,6 +50,8 @@ class KernelManager:
 
     @staticmethod
     def compile_all():
+        """Compiles all the registered kernel sources into object files (one for each source).
+        """
         logger.info("Compiling kernels")
 
         peano_path = os.environ.get("PEANO_INSTALL_DIR")
@@ -45,7 +67,7 @@ class KernelManager:
             stdout = subprocess.check_output([f"{peano_path}/bin/clang++", "-O2", "-std=c++20", "--target=aie2-none-unknown-elf",
                                               "-Wno-parentheses", "-Wno-attributes", "-Wno-macro-redefined", "-Wno-empty-body",
                                               "-I", "/home/mliraie/mlir-aie/ironenv/lib/python3.12/site-packages/mlir_aie/include",
-                                              "-DNDEBUG", "-c",
+                                              "-DNDEBUG", "-c",  # TODO: add support for linking to other objects
                                               source_name, "-o", object_name.name])
 
             if len(stdout) > 0:
@@ -55,4 +77,10 @@ class KernelManager:
 
     @staticmethod
     def get_kernel_object_for(opname):
+        """Gets the path to the object file prodiced by the compilation for a given :OpNames: entry.
+
+        Returns
+        -------
+        A string containing the path to the object file.
+        """
         return KernelManager.__kernel_objects[opname]

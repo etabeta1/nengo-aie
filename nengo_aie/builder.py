@@ -6,6 +6,11 @@ logger = logging.getLogger(__name__)
 
 
 class AIEBuilder(nengo.builder.Builder):
+    """Clone of the default nengo builder.
+
+    It has been decided to clone the default builder so that registering new builder methods does not affect the default nengo builder.
+    Refer to nengo documentation for information about methods, attributes and parameters.
+    """
     builders = {}
 
     def __init__(self):
