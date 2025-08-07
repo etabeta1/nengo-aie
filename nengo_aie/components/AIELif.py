@@ -36,8 +36,10 @@ class AIELif(nengo.neurons.LIF):
         # The one we use is the parameter.
         assert dt == self.dt
 
-        # self.input_bo.write(np.ones((3 * self.size, )).astype(ITEMTYPE).view(np.uint8), 0)
+        self.input_bo.write(np.ones((3 * self.size, )).astype(ITEMTYPE).view(np.uint8), 0)
 
+        copy = np.concatenate([J, voltage, refractory_time])
+        
         for i, buff in enumerate([J, voltage, refractory_time]):
             self.input_bo.write(buff.astype(ITEMTYPE).view(np.uint8), self.size * i * ITEMSIZE)
         
@@ -49,10 +51,14 @@ class AIELif(nengo.neurons.LIF):
 
         output_v = self.output_bo.read(self.size * ITEMSIZE * 3, 0).view(ITEMTYPE)
 
-        output[...] = output_v[0:output.size]
-        voltage[...] = output_v[self.size:self.size+voltage.size]
-        refractory_time[...] = output_v[2*self.size:2*self.size+refractory_time.size]
-
+        try:
+            output[...] = output_v[0:output.size]
+            voltage[...] = output_v[self.size:self.size+voltage.size]
+            refractory_time[...] = output_v[2*self.size:2*self.size+refractory_time.size]
+        except:
+            np.savetxt("in.txt", copy)
+            np.savetxt("out.txt", output_v)
+            raise
         # output[...] = self.output_bo.read(self.size * ITEMSIZE, 0).view(ITEMTYPE)[:output.size]
         # voltage[...] = self.output_bo.read(self.size * ITEMSIZE, self.size * ITEMSIZE).view(ITEMTYPE)[:voltage.size]
         # refractory_time[...] = self.output_bo.read(self.size * ITEMSIZE, 2 * self.size * ITEMSIZE).view(ITEMTYPE)[:refractory_time.size]
