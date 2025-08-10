@@ -9,6 +9,7 @@ from aie.iron import Kernel, ObjectFifo, Program, Runtime, Worker  # type: ignor
 from aie.iron.placers import SequentialPlacer  # type: ignore
 from aie.iron.controlflow import range_  # type: ignore
 from aie.helpers.taplib import TensorAccessPattern  # type: ignore
+from aie.iron.resolvable import Resolvable  # type: ignore
 
 
 class ElementwiseIncBuilder(MlirBuilderBase):
@@ -23,7 +24,7 @@ class ElementwiseIncBuilder(MlirBuilderBase):
     def __init__(self):
         super().__init__()
 
-    def build(self, device, size) -> tuple[str, str]:
+    def build(self, device: Resolvable, size: int) -> tuple[str, str]:
         """Writes the MLIR module to a temp file, compiles it and returns a tuple containing the path to the file containing the instructions and the path to the xclbin.
 
         Defines all the structure of the MLIR module (and compiles it) used to compute the ElementwiseInc on a 3-vectors list of np.float32 input.

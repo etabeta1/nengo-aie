@@ -5,6 +5,8 @@ from ..AIEManager import AIEManager, AIEContext
 from ..aie_kernels import ElementwiseIncBuilder
 from ..rc import DEFAULT_DEVICE, ITEMTYPE
 
+from typing import Callable
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -56,7 +58,7 @@ class AIEElementwiseInc(nengo.builder.operator.ElementwiseInc):
     def _descstr(self):
         return f"{self.A}, {self.X} -> {self.Y}"
 
-    def make_step(self, signals, dt, rng):
+    def make_step(self, signals: dict, dt: float, rng) -> Callable:
         # We do signal size checks with the super() method without actually using the returning callable
 
         try:

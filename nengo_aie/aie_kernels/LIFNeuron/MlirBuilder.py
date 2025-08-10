@@ -11,6 +11,7 @@ from aie.iron import Kernel, ObjectFifo, Program, Runtime, Worker, GlobalBuffer,
 from aie.iron.placers import SequentialPlacer  # type: ignore
 from aie.iron.controlflow import range_  # type: ignore
 from aie.helpers.taplib import TensorAccessPattern  # type: ignore
+from aie.iron.resolvable import Resolvable  # type: ignore
 
 
 class LIFNeuronBuilder(MlirBuilderBase):
@@ -25,7 +26,7 @@ class LIFNeuronBuilder(MlirBuilderBase):
     def __init__(self):
         super().__init__()
 
-    def build(self, device, size, **kwargs) -> tuple[str, str]:
+    def build(self, device: Resolvable, size: int, **kwargs) -> tuple[str, str]:
         """Writes the MLIR module to a temp file and returns a tuple containing the path to the file containing the instructions and the path to the xclbin.
 
         Defines all the structure of the MLIR module (and compiles it) used to compute the next state of a :size: sized group of LIR neurons.
