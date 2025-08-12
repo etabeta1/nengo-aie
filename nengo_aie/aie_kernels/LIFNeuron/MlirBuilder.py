@@ -89,13 +89,13 @@ class LIFNeuronBuilder(MlirBuilderBase):
 
         step_1_fn = Kernel(
             "lif_kernel_step_1",
-            "kernel.o",
+            KernelManager.get_kernel_object_for(OpNames.LIF_NEURON),
             [rtp_value_type] * rtp_num + [input_type, intermediate_type]
         )
 
         step_2_fn = Kernel(
             "lif_kernel_step_2",
-            "kernel.o",
+            KernelManager.get_kernel_object_for(OpNames.LIF_NEURON),
             [rtp_value_type] * rtp_num + [intermediate_type, output_type]
         )
 
