@@ -1,26 +1,39 @@
 import nengo
 
+import nengo.ensemble
+import nengo.connection
+import nengo.synapses
+import nengo.params
+import nengo.solvers
+import nengo.learning_rules
+
+import collections.abc
+
+import numpy
+
 
 class AIEConnection(nengo.Connection):
     """Wraps a nengo connection. Refer to nengo documentation for properties, methods and parameters.
     """
 
     def __init__(self,
-                 #  pre: nengo.Ensemble | nengo.ensemble.Neurons | nengo.Node,
-                 #  post: nengo.Ensemble | nengo.ensemble.Neurons | nengo.Node | nengo.connection.LearningRule,
-                 #  synapse: nengo.synapses.Synapse | nengo.params.DefaultType | None = nengo.Default,
-                 #  function: collections.abc.Callable | numpy.ndarray | nengo.params.DefaultType = nengo.Default,
-                 #  transform: numpy.ndarray | nengo.params.DefaultType = nengo.Default,
-                 #  solver: nengo.solvers.Solver | nengo.params.DefaultType = nengo.Default,
-                 #  learning_rule_type: nengo.learning_rules.LearningRuleType | collections.abc.Iterable[
-                 #      nengo.learning_rules.LearningRuleType] | nengo.params.DefaultType = nengo.Default,
-                 #  eval_points: numpy.ndarray | int | nengo.params.DefaultType = nengo.Default,
-                 #  scale_eval_points: bool | nengo.params.DefaultType = nengo.Default,
-                 #  label: str | nengo.params.DefaultType = nengo.Default,
-                 #  seed: str | nengo.params.DefaultType = nengo.Default,
-                 *args, **kwargs
+                 pre: nengo.Ensemble | nengo.ensemble.Neurons | nengo.Node,
+                 post: nengo.Ensemble | nengo.ensemble.Neurons | nengo.Node | nengo.connection.LearningRule,
+                 synapse: nengo.synapses.Synapse | nengo.params.DefaultType | None = nengo.Default,
+                 function: collections.abc.Callable | numpy.ndarray | nengo.params.DefaultType = nengo.Default,
+                 transform: numpy.ndarray | nengo.params.DefaultType = nengo.Default,
+                 solver: nengo.solvers.Solver | nengo.params.DefaultType = nengo.Default,
+                 learning_rule_type: nengo.learning_rules.LearningRuleType | collections.abc.Iterable[
+                     nengo.learning_rules.LearningRuleType] | nengo.params.DefaultType = nengo.Default,
+                 eval_points: numpy.ndarray | int | nengo.params.DefaultType = nengo.Default,
+                 scale_eval_points: bool | nengo.params.DefaultType = nengo.Default,
+                 label: str | nengo.params.DefaultType = nengo.Default,
+                 seed: str | nengo.params.DefaultType = nengo.Default,
+                 #  *args, **kwargs
                  ):
-        super().__init__(*args, **kwargs)
+        # super().__init__(*args, **kwargs)
+        super().__init__(pre=pre, post=post, synapse=synapse, function=function, transform=transform,  # type: ignore
+                         solver=solver, learning_rule_type=learning_rule_type, eval_points=eval_points, scale_eval_points=scale_eval_points, label=label, seed=seed)  # type: ignore
 
     @property
     def function(self):

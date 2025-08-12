@@ -5,7 +5,7 @@ class AIEDense(nengo.Dense):
     """Wraps a nengo dense. Refer to nengo documentation for properties, methods and parameters.
     """
 
-    def __init__(self, shape, init=1):
+    def __init__(self, shape: tuple, init: float = 1):
         super().__init__(shape, init)
 
     @property

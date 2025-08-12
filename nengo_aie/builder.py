@@ -1,5 +1,6 @@
 import nengo
 import nengo.builder
+import nengo.base
 
 import logging
 logger = logging.getLogger(__name__)
@@ -18,7 +19,7 @@ class AIEBuilder(nengo.builder.Builder):
         logger.info("Initialied builder")
 
     @classmethod
-    def build(cls, model, obj, *args, **kwargs):
+    def build(cls: type, model: nengo.builder.Model, obj: nengo.base.NengoObject, *args, **kwargs):
         try:
             build_result = nengo.builder.Builder.build.__func__(
                 AIEBuilder, model, obj, *args, **kwargs)

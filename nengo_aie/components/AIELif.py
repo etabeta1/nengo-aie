@@ -5,15 +5,16 @@ from ..AIEManager import AIEManager, AIEContext
 from ..aie_kernels import LIFNeuronBuilder
 from ..rc import DEFAULT_DEVICE, ITEMTYPE, ITEMSIZE
 import numpy as np
+import numpy.typing as npt
 
 
 class AIELif(nengo.neurons.LIF):
     """Wraps a nengo LIF neuron type. Refer to nengo documentation for properties, methods and parameters.
     """
 
-    def __init__(self, size, dt, tau_rc=0.02, tau_ref=0.002, min_voltage=0, amplitude=1, initial_state=None):
+    def __init__(self, size: int, dt: float, tau_rc: float = 0.02, tau_ref: float = 0.002, min_voltage: float = 0, amplitude: float = 1, initial_state=None):
         super().__init__(tau_rc=tau_rc, tau_ref=tau_ref,
-                         amplitude=amplitude, initial_state=initial_state)
+                         amplitude=amplitude, initial_state=initial_state)  # type: ignore
 
         # For size and dt parameters, we had two options:
         # a) we pass them as parameters in the constructor duplicating information (double source of truth)
@@ -36,15 +37,16 @@ class AIELif(nengo.neurons.LIF):
         self.output_bo = self.context.create_inout_bo(
             "output", 3 * self.size, ITEMSIZE)
 
-    def step(self, dt, J, output, voltage, refractory_time):
+    def step(self, dt: float, J: npt.NDArray, output: npt.NDArray, voltage: npt.NDArray, refractory_time: npt.NDArray):
         # As per comment in the constructor, we now have two places from which to read the "dt" value.
         # The one we use is the parameter.
         assert dt == self.dt
 
-        self.input_bo.write(np.ones((3 * self.size, )).astype(ITEMTYPE).view(np.uint8), 0)
+        self.input_bo.write(
+            np.ones((3 * self.size, )).astype(ITEMTYPE).view(np.uint8), 0)
 
         copy = np.concatenate([J, voltage, refractory_time])
-        
+
         for i, buff in enumerate([J, voltage, refractory_time]):
             self.input_bo.write(buff.astype(ITEMTYPE).view(
                 np.uint8), self.size * i * ITEMSIZE)
@@ -59,8 +61,9 @@ class AIELif(nengo.neurons.LIF):
 
         try:
             output[...] = output_v[0:output.size]
-            voltage[...] = output_v[self.size:self.size+voltage.size]
-            refractory_time[...] = output_v[2*self.size:2*self.size+refractory_time.size]
+            voltage[...] = output_v[self.size:self.size + voltage.size]
+            refractory_time[...] = output_v[2 *
+                                            self.size:2 * self.size + refractory_time.size]
         except:
             np.savetxt("in.txt", copy)
             np.savetxt("out.txt", output_v)

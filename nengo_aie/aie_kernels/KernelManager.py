@@ -2,6 +2,7 @@ import importlib_resources
 import tempfile
 import subprocess
 import os
+from . import OpNames
 
 import logging
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ class KernelManager:
     resources = importlib_resources.files(__package__)
 
     @staticmethod
-    def register_kernel_source(opname, *args):
+    def register_kernel_source(opname: OpNames, *args):
         """Registers a new source file for a given :OpNames: entry.
 
         Returns early without mutating the state of the class if a kernel has already been registered.
@@ -76,7 +77,7 @@ class KernelManager:
             KernelManager.__kernel_objects[opname] = object_name.name
 
     @staticmethod
-    def get_kernel_object_for(opname):
+    def get_kernel_object_for(opname: OpNames) -> str:
         """Gets the path to the object file prodiced by the compilation for a given :OpNames: entry.
 
         Returns

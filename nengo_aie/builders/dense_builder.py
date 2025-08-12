@@ -10,7 +10,7 @@ import numpy as np
 
 
 @AIEBuilder.register(AIEDense)
-def build_aie_dense(model: nengo.builder.Model, dense, sig_in: nengo.builder.Signal, decoders: np.ndarray | None = None, encoders: np.ndarray | None = None, rng=np.random):
+def build_aie_dense(model: nengo.builder.Model, dense, sig_in: nengo.builder.Signal, decoders: np.ndarray | None = None, encoders: np.ndarray | None = None, rng=np.random) -> tuple:
     """Builds a nengo dense object.
 
     Parameters

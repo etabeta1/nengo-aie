@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import tempfile
 import aie.utils.compile as compile_utils  # type: ignore
+from aie.iron.resolvable import Resolvable  # type: ignore
 import subprocess
 
 import logging
@@ -42,7 +43,7 @@ class MlirBuilder(ABC):
             delete=False, suffix=".bin").name
 
     @abstractmethod
-    def build(self, device, size) -> tuple[str, str]:
+    def build(self, device: Resolvable, size: int) -> tuple[str, str]:
         """Writes the MLIR module to a temp file, compiles it and returns a tuple containing the path to the file containing the instructions and the path to the xclbin.
 
         Parameters

@@ -3,15 +3,17 @@
 typedef bfloat16 dtype;
 constexpr int vec_factor = 32;
 
-namespace m {
-    #define EXPM1_PRECISION (11)
-    #define LOG1P_PRECISION (16)
+namespace m
+{
+#define EXPM1_PRECISION (11)
+#define LOG1P_PRECISION (16)
 
-    constexpr bfloat16 BF16_NULL = (bfloat16) 0.0f;
-    constexpr bfloat16 BF16_UNIT = (bfloat16) 1.0f;
+    constexpr bfloat16 BF16_NULL = (bfloat16)0.0f;
+    constexpr bfloat16 BF16_UNIT = (bfloat16)1.0f;
 
     // Computes exp(x) - 1 using taylor series expansion
-    __attribute__((inline)) aie::accum<accfloat, vec_factor> expm1(aie::vector<dtype, vec_factor> xs) {
+    __attribute__((inline)) aie::accum<accfloat, vec_factor> expm1(aie::vector<dtype, vec_factor> xs)
+    {
         event0();
 
         dtype inv_factorials[EXPM1_PRECISION] = {
@@ -25,16 +27,17 @@ namespace m {
             0.0001984126984126984f,
             2.48015873015873e-05f,
             2.7557319223985893e-06f,
-            2.755731922398589e-07f
-        };
+            2.755731922398589e-07f};
 
         aie::accum<accfloat, vec_factor> xs_exp(aie::broadcast<dtype, vec_factor>(1.0));
         aie::accum<accfloat, vec_factor> xs_sum(aie::broadcast<dtype, vec_factor>(0.0));
 
-        for(int i = 0; i < EXPM1_PRECISION; i++) chess_prepare_for_pipelining chess_loop_range(EXPM1_PRECISION, ) {
-            xs_sum = aie::mac(xs_sum, xs_exp.template to_vector<dtype>(), inv_factorials[i]);
-            xs_exp = aie::mul(xs_exp.template to_vector<dtype>(), xs);
-        }
+        for (int i = 0; i < EXPM1_PRECISION; i++)
+            chess_prepare_for_pipelining chess_loop_range(EXPM1_PRECISION, )
+            {
+                xs_sum = aie::mac(xs_sum, xs_exp.template to_vector<dtype>(), inv_factorials[i]);
+                xs_exp = aie::mul(xs_exp.template to_vector<dtype>(), xs);
+            }
 
         event1();
 
@@ -70,8 +73,7 @@ namespace m {
             0.07692307692307693f,
             -0.07142857142857142f,
             0.06666666666666667f,
-            -0.0625f
-};
+            -0.0625f};
 
         event0();
 
@@ -97,59 +99,78 @@ namespace m {
     }
 }
 
-extern "C" {
-    void lif_kernel(float _tau_rc, float _tau_ref, float _min_voltage, float _dt, float _amplitude,
-                    dtype* _pIn, dtype* _pOut)
+extern "C"
+{
+    void lif_kernel_step_1(float _tau_rc, float _tau_ref, float _min_voltage, float _dt, float _amplitude, float _spike_height, dtype *_pIn, dtype *_pOut)
     {
-        dtype* __restrict pIn = _pIn;
-        dtype* __restrict pOut = _pOut;
+        dtype *__restrict pIn = _pIn;
+        dtype *__restrict pOut1 = _pOut;
 
         event0();
 
-        dtype tau_rc = (dtype) _tau_rc;
-        dtype tau_ref = (dtype) _tau_ref;
-        dtype min_voltage = (dtype) _min_voltage;
-        dtype dt = (dtype) _dt;
-        dtype amplitude = (dtype) _amplitude;
-    
-        dtype spike_height = amplitude / dt;
+        dtype tau_rc = (dtype)_tau_rc;
+        dtype tau_ref = (dtype)_tau_ref;
+        dtype min_voltage = (dtype)_min_voltage;
+        dtype dt = (dtype)_dt;
+        dtype amplitude = (dtype)_amplitude;
+        dtype spike_height = (dtype)_spike_height;
 
         aie::vector<dtype, vec_factor> input_currents = aie::load_v<vec_factor>(pIn);
-        pIn += vec_factor;
-        aie::vector<dtype, vec_factor> voltages = aie::load_v<vec_factor>(pIn);
-        pIn += vec_factor;
-        aie::vector<dtype, vec_factor> refractory_times = aie::load_v<vec_factor>(pIn);
-        pIn += vec_factor;
-
-        aie::vector<dtype, vec_factor> output;
+        aie::store_v(pOut1, input_currents);
+        aie::vector<dtype, vec_factor> voltages = aie::load_v<vec_factor>(pIn + vec_factor);
+        aie::vector<dtype, vec_factor> refractory_times = aie::load_v<vec_factor>(pIn + 2 * vec_factor);
 
         refractory_times = aie::sub(refractory_times, dt);
-        
+        aie::store_v(pOut1 + 2 * vec_factor, refractory_times);
+
         aie::vector<dtype, vec_factor> delta_t = aie::clamp(aie::sub(dt, refractory_times), m::BF16_NULL, dt);
         aie::vector<dtype, vec_factor> delta_iv = aie::sub(input_currents, voltages);
         aie::vector<dtype, vec_factor> exponential = m::expm1(aie::div(aie::neg(delta_t), tau_rc).template to_vector<dtype>());
-        
-        voltages = aie::sub(voltages, aie::mul(delta_iv, exponential).template to_vector<dtype>());
-        
-        aie::mask<vec_factor> spike_mask = aie::gt(voltages, m::BF16_UNIT);
-        
-        output = aie::select(m::BF16_NULL, spike_height, spike_mask);
 
-        aie::vector<dtype, vec_factor> vm1 = aie::select(m::BF16_UNIT, aie::sub(voltages, m::BF16_UNIT), spike_mask);
-        aie::vector<dtype, vec_factor> im1 = aie::select(m::BF16_UNIT * 2, aie::sub(input_currents, m::BF16_UNIT), spike_mask);
-        aie::vector<dtype, vec_factor> t_spike = aie::add(aie::mul(tau_rc, m::log1p(aie::neg(aie::div(vm1, im1)))), dt);
+        voltages = aie::sub(voltages, aie::mul(delta_iv, exponential).template to_vector<dtype>());
+        aie::store_v(pOut1 + vec_factor, voltages);
+
+        event1();
+    }
+
+    void lif_kernel_step_2(float _tau_rc, float _tau_ref, float _min_voltage, float _dt, float _amplitude, float _spike_height, dtype *_pIn, dtype *_pOut)
+    {
+        dtype *__restrict pIn1 = _pIn;
+        dtype *__restrict pOut = _pOut;
+
+        event0();
+
+        dtype tau_rc = (dtype)_tau_rc;
+        dtype tau_ref = (dtype)_tau_ref;
+        dtype min_voltage = (dtype)_min_voltage;
+        dtype dt = (dtype)_dt;
+        dtype amplitude = (dtype)_amplitude;
+        dtype spike_height = (dtype)_spike_height;
+
+        aie::vector<dtype, vec_factor> input_currents = aie::load_v<vec_factor>(pIn1);
+        aie::vector<dtype, vec_factor> voltages = aie::load_v<vec_factor>(pIn1 + vec_factor);
+        aie::vector<dtype, vec_factor> refractory_times = aie::load_v<vec_factor>(pIn1 + 2 * vec_factor);
+
+        aie::mask<vec_factor> spike_mask = aie::gt(voltages, m::BF16_UNIT);
+
+        aie::vector<dtype, vec_factor> vm1_ns = aie::sub(voltages, m::BF16_UNIT);
+        aie::vector<dtype, vec_factor> vm1 = aie::select(m::BF16_UNIT, vm1_ns, spike_mask);
+
+        aie::vector<dtype, vec_factor> im1_ns = aie::sub(input_currents, m::BF16_UNIT);
+        aie::vector<dtype, vec_factor> im1 = aie::select(m::BF16_UNIT * 2, im1_ns, spike_mask);
+
+        aie::vector<dtype, vec_factor> negdiv = aie::neg(aie::div(vm1, im1));
+        aie::vector<dtype, vec_factor> t_spike = aie::add(aie::mul(tau_rc, m::log1p(negdiv)), dt);
+
+        aie::vector<dtype, vec_factor> output = aie::select(m::BF16_NULL, spike_height, spike_mask);
+        aie::store_v(pOut, output);
 
         voltages = aie::max(voltages, min_voltage);
         voltages = aie::select(voltages, m::BF16_NULL, spike_mask);
+        aie::store_v(pOut + vec_factor, voltages);
 
         refractory_times = aie::select(refractory_times, aie::add(tau_ref, t_spike), spike_mask);
-    
-        aie::store_v(pOut, output);
-        pOut += vec_factor;
-        aie::store_v(pOut, voltages);
-        pOut += vec_factor;
-        aie::store_v(pOut, refractory_times);
-        pOut += vec_factor;
+        aie::store_v(pOut + 2 * vec_factor, refractory_times);
 
         event1();
     }

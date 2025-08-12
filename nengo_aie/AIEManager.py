@@ -97,7 +97,7 @@ class AIEContext:
         Calls the kernel on the NPU.
     """
 
-    def __init__(self, device, kernel, instr_v, instr_bo):
+    def __init__(self, device: xrt.device, kernel: xrt.kernel, instr_v: list[int], instr_bo: xrt.bo):
         self.__device = device
         self.__kernel = kernel
         self.__instr_v = instr_v
@@ -105,7 +105,7 @@ class AIEContext:
         self.__bos = {}
         self.__next_gid = 3
 
-    def create_inout_bo(self, name, volume, itemsize):
+    def create_inout_bo(self, name: str, volume: int, itemsize: int) -> xrt.bo:
         """Creates an HOST_ONLY buffer object with incremental group_id.
 
         Parameters
@@ -128,13 +128,13 @@ class AIEContext:
 
         return bo
 
-    def get_device(self):
+    def get_device(self) -> xrt.device:
         return self.__device
 
-    def get_bo(self, name):
+    def get_bo(self, name: str) -> xrt.bo:
         return self.__bos[name]
 
-    def get_kernel(self):
+    def get_kernel(self) -> xrt.kernel:
         return self.__kernel
 
     def kernel_call(self, *args):
