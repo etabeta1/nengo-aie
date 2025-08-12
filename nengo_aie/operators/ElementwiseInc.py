@@ -3,7 +3,9 @@ import nengo.builder
 
 from ..AIEManager import AIEManager, AIEContext
 from ..aie_kernels import ElementwiseIncBuilder
-from ..rc import DEFAULT_DEVICE, ITEMTYPE
+from ..rc import DEFAULT_DEVICE, ITEMTYPE, ITEMSIZE
+
+import numpy as np
 
 import logging
 logger = logging.getLogger(__name__)
@@ -25,7 +27,7 @@ class AIEElementwiseInc(nengo.builder.operator.ElementwiseInc):
     def __init__(self, A: nengo.builder.Signal, X: nengo.builder.Signal, Y: nengo.builder.Signal, tag=None):
         super().__init__(A, X, Y, tag=tag)
 
-        self.size = AIEManager.next_multiple_of(16)(Y.size)
+        self.size = AIEManager.next_multiple_of(32)(Y.size)
 
         builder = ElementwiseIncBuilder()
         # TODO: use official wrapper (e.g. AIEApplication et similia)
@@ -36,9 +38,9 @@ class AIEElementwiseInc(nengo.builder.operator.ElementwiseInc):
         self.context = AIEContext(device, kernel, instr_v, instr_bo)
 
         self.input_bo = self.context.create_inout_bo(
-            "input", 3 * self.size, ITEMTYPE().itemsize)
+            "input", 3 * self.size, ITEMSIZE)
         self.output_bo = self.context.create_inout_bo(
-            "output", self.size, ITEMTYPE().itemsize)
+            "output", self.size, ITEMSIZE)
 
     @property
     def A(self):
@@ -69,7 +71,7 @@ class AIEElementwiseInc(nengo.builder.operator.ElementwiseInc):
         def step():
             for i, buff in enumerate([self.A, self.X, self.Y]):
                 self.input_bo.write(signals[buff].astype(
-                    ITEMTYPE), self.size * i * ITEMTYPE().itemsize)
+                    ITEMTYPE).view(np.uint8), self.size * i * ITEMSIZE)
                 self.output_bo.sync(xrt.xclBOSyncDirection.XCL_BO_SYNC_BO_TO_DEVICE)
 
             self.context.kernel_call(self.input_bo, self.output_bo)  # type: ignore
@@ -77,6 +79,6 @@ class AIEElementwiseInc(nengo.builder.operator.ElementwiseInc):
             self.output_bo.sync(xrt.xclBOSyncDirection.XCL_BO_SYNC_BO_FROM_DEVICE)
 
             signals[self.Y][...] = self.output_bo.read(
-                self.size * ITEMTYPE().itemsize, 0).view(ITEMTYPE)[:signals[self.Y].size]
+                self.size * ITEMSIZE, 0).view(ITEMTYPE)[:signals[self.Y].size]
 
         return step

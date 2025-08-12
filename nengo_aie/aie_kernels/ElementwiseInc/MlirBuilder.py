@@ -10,6 +10,8 @@ from aie.iron.placers import SequentialPlacer  # type: ignore
 from aie.iron.controlflow import range_  # type: ignore
 from aie.helpers.taplib import TensorAccessPattern  # type: ignore
 
+from ml_dtypes import bfloat16
+
 
 class ElementwiseIncBuilder(MlirBuilderBase):
     """MLIR module builder for ElementiwseInc operator.
@@ -39,8 +41,8 @@ class ElementwiseIncBuilder(MlirBuilderBase):
             The size of each one of the input vectors (should be a multiple of 16).
         """
         num_workers = 4
-        value_type = np.float32
-        vec_factor = 16
+        value_type = bfloat16
+        vec_factor = 32
 
         entire_axy_input_type = np.ndarray[(3 * size, ), np.dtype[value_type]]
         entire_output_type = np.ndarray[(1 * size, ), np.dtype[value_type]]

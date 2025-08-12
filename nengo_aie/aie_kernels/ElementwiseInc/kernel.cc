@@ -4,7 +4,7 @@
 #include <type_traits>
 #include <aie_api/aie.hpp>
 
-typedef float dtype;
+typedef bfloat16 dtype;
 
 extern "C" {
 
@@ -12,7 +12,7 @@ void elementwise_inc(dtype* in1, dtype* out1) {
     dtype* __restrict pIn1 = in1;
     dtype* __restrict pOut1 = out1;
 
-    constexpr int vec_factor = 16;
+    constexpr int vec_factor = 32;
 
     aie::vector<dtype, vec_factor> vA = aie::load_v<vec_factor>(pIn1);
     pIn1 += vec_factor;
