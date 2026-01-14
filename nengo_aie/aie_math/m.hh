@@ -33,9 +33,9 @@ namespace m
     {
         std::array<T, N> results{};
 
-        for (std::size_t i = 1; i <= N; i++)
+        for (std::size_t i = 1; i <= N; ++i)
         {
-            results[i] = static_cast<T>(1) / static_cast<T>(i) * static_cast<T>(i % 2 == 1 ? -1 : 1);
+            results[i - 1] = static_cast<T>(1) / static_cast<T>(i) * static_cast<T>(i % 2 == 0 ? -1 : 1);
         }
 
         return results;
@@ -45,29 +45,31 @@ namespace m
     constexpr bfloat16 BF16_UNIT = (bfloat16)1.0f;
 
     // Computes exp(x) - 1 using taylor series expansion
-    template <typename dtype, typename acctype, int vec_factor, int precision>
-    __attribute__((inline)) aie::accum<accfloat, vec_factor> expm1(aie::vector<dtype, vec_factor> xs)
+    template <typename dtype, typename acctype, std::size_t vec_factor, std::size_t precision>
+    __attribute__((inline)) aie::accum<acctype, vec_factor> expm1(aie::vector<dtype, vec_factor> xs)
     {
         event0();
 
-        dtype inv_factorials[EXPM1_PRECISION] = {
-            1.0f,
-            1.0f,
-            0.5f,
-            0.16666666666666666f,
-            0.041666666666666664f,
-            0.008333333333333333f,
-            0.001388888888888889f,
-            0.0001984126984126984f,
-            2.48015873015873e-05f,
-            2.7557319223985893e-06f,
-            2.755731922398589e-07f};
+        // dtype inv_factorials[EXPM1_PRECISION] = {
+        //     1.0f,
+        //     1.0f,
+        //     0.5f,
+        //     0.16666666666666666f,
+        //     0.041666666666666664f,
+        //     0.008333333333333333f,
+        //     0.001388888888888889f,
+        //     0.0001984126984126984f,
+        //     2.48015873015873e-05f,
+        //     2.7557319223985893e-06f,
+        //     2.755731922398589e-07f};
 
-        aie::accum<accfloat, vec_factor> xs_exp(aie::broadcast<dtype, vec_factor>(1.0));
-        aie::accum<accfloat, vec_factor> xs_sum(aie::broadcast<dtype, vec_factor>(0.0));
+        constexpr std::array<dtype, precision> inv_factorials = inverse_factorials<dtype, precision>();
 
-        for (int i = 0; i < EXPM1_PRECISION; i++)
-            chess_prepare_for_pipelining chess_loop_range(EXPM1_PRECISION, )
+        aie::accum<acctype, vec_factor> xs_exp(aie::broadcast<dtype, vec_factor>(1.0));
+        aie::accum<acctype, vec_factor> xs_sum(aie::broadcast<dtype, vec_factor>(0.0));
+
+        for (int i = 0; i < precision; i++)
+            chess_prepare_for_pipelining chess_loop_range(precision, )
             {
                 xs_sum = aie::mac(xs_sum, xs_exp.template to_vector<dtype>(), inv_factorials[i]);
                 xs_exp = aie::mul(xs_exp.template to_vector<dtype>(), xs);
@@ -78,6 +80,7 @@ namespace m
         return aie::sub(xs_sum, 1.0f);
     }
 
+    template <typename dtype, typename acctype, std::size_t vec_factor, std::size_t precision>
     __attribute__((inline)) aie::vector<dtype, vec_factor> log1p(aie::vector<dtype, vec_factor> xs)
     {
         /*
@@ -91,23 +94,25 @@ namespace m
             so we substitute x with -x / (1 + x) when it's the case and then we negate the result.
         */
 
-        dtype signed_inv[LOG1P_PRECISION] = {
-            1.0f,
-            -0.5f,
-            0.3333333333333333f,
-            -0.25f,
-            0.2f,
-            -0.16666666666666666f,
-            0.14285714285714285f,
-            -0.125f,
-            0.1111111111111111f,
-            -0.1f,
-            0.09090909090909091f,
-            -0.08333333333333333f,
-            0.07692307692307693f,
-            -0.07142857142857142f,
-            0.06666666666666667f,
-            -0.0625f};
+        // dtype signed_inv[LOG1P_PRECISION] = {
+        //     1.0f,
+        //     -0.5f,
+        //     0.3333333333333333f,
+        //     -0.25f,
+        //     0.2f,
+        //     -0.16666666666666666f,
+        //     0.14285714285714285f,
+        //     -0.125f,
+        //     0.1111111111111111f,
+        //     -0.1f,
+        //     0.09090909090909091f,
+        //     -0.08333333333333333f,
+        //     0.07692307692307693f,
+        //     -0.07142857142857142f,
+        //     0.06666666666666667f,
+        //     -0.0625f};
+
+        constexpr std::array<dtype, precision> signed_inv = alt_signed_inverses<dtype, precision>();
 
         event0();
 
@@ -117,11 +122,11 @@ namespace m
 
         xs = aie::select(xs, negdiv, flip_mask);
 
-        aie::accum<accfloat, vec_factor> xs_exp(aie::broadcast<dtype, vec_factor>(1.0f));
-        aie::accum<accfloat, vec_factor> xs_sum(aie::broadcast<dtype, vec_factor>(0.0f));
+        aie::accum<acctype, vec_factor> xs_exp(aie::broadcast<dtype, vec_factor>(1.0f));
+        aie::accum<acctype, vec_factor> xs_sum(aie::broadcast<dtype, vec_factor>(0.0f));
 
-        for (int i = 0; i < LOG1P_PRECISION; i++)
-            chess_prepare_for_pipelining chess_loop_range(LOG1P_PRECISION, )
+        for (int i = 0; i < precision; i++)
+            chess_prepare_for_pipelining chess_loop_range(precision, )
             {
                 xs_exp = aie::mul(xs_exp.template to_vector<dtype>(), xs);
                 xs_sum = aie::mac(xs_sum, xs_exp.template to_vector<dtype>(), signed_inv[i]);
