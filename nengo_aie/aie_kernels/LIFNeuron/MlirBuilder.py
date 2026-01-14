@@ -7,7 +7,7 @@ import sys
 
 import ml_dtypes
 
-from aie.iron import Kernel, ObjectFifo, Program, Runtime, Worker, GlobalBuffer, WorkerRuntimeBarrier  # type: ignore
+from aie.iron import Kernel, ObjectFifo, Program, Runtime, Worker, Buffer, WorkerRuntimeBarrier  # type: ignore
 from aie.iron.placers import SequentialPlacer  # type: ignore
 from aie.iron.controlflow import range_  # type: ignore
 from aie.helpers.taplib import TensorAccessPattern  # type: ignore
@@ -133,7 +133,7 @@ class LIFNeuronBuilder(MlirBuilderBase):
                 interm_of.release(1)
                 output_of.release(1)
 
-        rtpss = [GlobalBuffer(
+        rtpss = [Buffer(
             rtp_type, name=f"rtps{i}", use_write_rtp=True) for i in range(2 * num_worker_pairs)]
 
         rtpbs = [WorkerRuntimeBarrier() for _ in range(2 * num_worker_pairs)]
