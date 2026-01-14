@@ -6,6 +6,8 @@ from .LIFNeuron import LIFNeuronBuilder
 
 from .KernelManager import KernelManager
 
+KernelManager.register_inc_folder("aie_math")
+
 KernelManager.register_kernel_source(
     OpNames.ELEMENTWISE_INC, "ElementwiseInc", "kernel.cc")
 KernelManager.register_kernel_source(
