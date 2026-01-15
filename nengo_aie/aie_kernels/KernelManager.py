@@ -2,6 +2,7 @@ import importlib_resources
 import tempfile
 import subprocess
 import os
+import shutil
 from . import OpNames
 
 import logging
@@ -17,9 +18,12 @@ class KernelManager:
         Tracks the position of the .cc source for each kernel.
     __kernel_objects : dict[OpNames, str]
         Tracks the position of the object file for each kernel.
+    __inc_folders : list[str]
+        Traks all the externally registered folders containing headers used in the kernels.
     """
     __kernel_sources = {}
     __kernel_objects = {}
+    __inc_folders = []
 
     resources = importlib_resources.files(__package__)
 
@@ -50,6 +54,18 @@ class KernelManager:
         KernelManager.__kernel_sources[opname] = destination.name
 
     @staticmethod
+    def register_inc_folder(*args):
+        full_path = KernelManager.resources.joinpath(*args).name
+
+        logger.debug(f"Registering {args[-1]} include folder")
+
+        folder = tempfile.TemporaryDirectory(delete=False).name
+
+        KernelManager.__inc_folders.append(folder)
+
+        shutil.copytree(full_path, folder)
+
+    @staticmethod
     def compile_all():
         """Compiles all the registered kernel sources into object files (one for each source).
         """
@@ -68,7 +84,8 @@ class KernelManager:
             stdout = subprocess.check_output([f"{peano_path}/bin/clang++", "-O2", "-std=c++20", "--target=aie2-none-unknown-elf",
                                               "-Wno-parentheses", "-Wno-attributes", "-Wno-macro-redefined", "-Wno-empty-body",
                                               "-I", "/home/mliraie/mlir-aie/ironenv/lib/python3.12/site-packages/mlir_aie/include",
-                                              "-DNDEBUG", "-c",  # TODO: add support for linking to other objects
+                                              "-DNDEBUG", "-c",
+                                              *[f"-I{i}" for i in KernelManager.__inc_folders],
                                               source_name, "-o", object_name.name])
 
             if len(stdout) > 0:

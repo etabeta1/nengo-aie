@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import tempfile
-import aie.utils.compile as compile_utils  # type: ignore
 from aie.iron.resolvable import Resolvable  # type: ignore
 import subprocess
 
