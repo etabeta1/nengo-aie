@@ -1,4 +1,5 @@
 #include <aie_api/aie.hpp>
+#include <aie_math/m.hh>
 
 typedef bfloat16 dtype;
 constexpr int vec_factor = 32;
@@ -32,7 +33,7 @@ extern "C"
 
         aie::vector<dtype, vec_factor> delta_t = aie::clamp(aie::sub(dt, refractory_times), m::BF16_NULL, dt);
         aie::vector<dtype, vec_factor> delta_iv = aie::sub(input_currents, voltages);
-        aie::vector<dtype, vec_factor> exponential = m::expm1(aie::div(aie::neg(delta_t), tau_rc).template to_vector<dtype>());
+        aie::vector<dtype, vec_factor> exponential = m::expm1<dtype, accfloat, vec_factor, EXPM1_PRECISION>(aie::div(aie::neg(delta_t), tau_rc).template to_vector<dtype>());
 
         voltages = aie::sub(voltages, aie::mul(delta_iv, exponential).template to_vector<dtype>());
         aie::store_v(pOut1 + vec_factor, voltages);
@@ -67,7 +68,7 @@ extern "C"
         aie::vector<dtype, vec_factor> im1 = aie::select(m::BF16_UNIT * 2, im1_ns, spike_mask);
 
         aie::vector<dtype, vec_factor> negdiv = aie::neg(aie::div(vm1, im1));
-        aie::vector<dtype, vec_factor> t_spike = aie::add(aie::mul(tau_rc, m::log1p(negdiv)), dt);
+        aie::vector<dtype, vec_factor> t_spike = aie::add(aie::mul(tau_rc, m::log1p<dtype, accfloat, vec_factor, LOG1P_PRECISION>(negdiv)), dt);
 
         aie::vector<dtype, vec_factor> output = aie::select(m::BF16_NULL, spike_height, spike_mask);
         aie::store_v(pOut, output);

@@ -1,13 +1,13 @@
-import importlib_resources
+import importlib
 import tempfile
 import subprocess
 import os
 import shutil
+from pathlib import Path
 from . import OpNames
 
 import logging
 logger = logging.getLogger(__name__)
-
 
 class KernelManager:
     """Manages the compilation and the tracking of all the sources and compilation artifacts related to each kernel.
@@ -25,7 +25,7 @@ class KernelManager:
     __kernel_objects = {}
     __inc_folders = []
 
-    resources = importlib_resources.files(__package__)
+    resources = importlib.resources.files(__package__)
 
     @staticmethod
     def register_kernel_source(opname: OpNames, *args):
@@ -57,13 +57,34 @@ class KernelManager:
     def register_inc_folder(*args):
         full_path = KernelManager.resources.joinpath(*args).name
 
+        print(full_path)
+
         logger.debug(f"Registering {args[-1]} include folder")
 
-        folder = tempfile.TemporaryDirectory(delete=False).name
+        folder = tempfile.TemporaryDirectory(delete=False)
 
         KernelManager.__inc_folders.append(folder)
 
-        shutil.copytree(full_path, folder)
+        dst = Path(folder) / full_path
+
+        with KernelManager.resources.as_file(full_path) as src:
+            shutil.copytree(src, dst, dirs_exist_ok=True)
+
+    # Warning: this method has been vibe-coded, handle with care
+    @staticmethod
+    def register_inc_folder(*args):
+        resource = KernelManager.resources.joinpath(*args)
+    
+        logger.debug(f"Registering {args[-1]} include folder")
+    
+        temp_dir = tempfile.TemporaryDirectory(delete=False)
+        KernelManager.__inc_folders.append(temp_dir.name)
+    
+        dst = Path(temp_dir.name) / resource.name
+    
+        with importlib.resources.as_file(resource) as src:
+            shutil.copytree(src, dst, dirs_exist_ok=True)
+
 
     @staticmethod
     def compile_all():
